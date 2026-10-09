@@ -1,0 +1,3317 @@
+{
+ "schema_version": "0.2",
+ "description": "Fixion cutscene benchmark seed cases (6 from Josh's 5 scenarios + 20 new). Preliminary.",
+ "coordinate_system": "integer (x,y), x east, y south, origin top-left of map file incl. border",
+ "seed_policy": "Every handcrafted case is its own seed: seed_id == id. A perturbed or synthetic variant keeps its parent's seed_id (and records generator model, perturbation type and filters). Dev/test/hidden splits are assigned per seed_id, so variants of one seed never straddle a split.",
+ "split_policy": "dev: open, iterate freely. test: run at checkpoints only, never pasted into prompts or used as synthetic seeds. hidden: kept private (not in this public file), run only by Josh for go/no-go; no tuning loop, human or agent, sees it.",
+ "global_judge_questions": [
+  {
+   "id": "G1",
+   "q": "Do the # narrative comments describe only effects that the following instructions actually perform (no effects that exist only in comments)?",
+   "expected": "yes",
+   "critical": true
+  },
+  {
+   "id": "G2",
+   "q": "Does every character act only on information they could actually have (heard speech, visible state, history)?",
+   "expected": "yes",
+   "critical": true
+  },
+  {
+   "id": "G3",
+   "q": "Is the size of the reaction proportional to the player's input?",
+   "expected": "yes",
+   "critical": false
+  },
+  {
+   "id": "G4",
+   "q": "Is anything stated or implied that contradicts the final world state?",
+   "expected": "no",
+   "critical": true
+  }
+ ],
+ "cases": [
+  {
+   "id": "J01-bar-hello",
+   "seed_id": "J01-bar-hello",
+   "origin": "josh",
+   "title": "Bartender walks to the customer's column",
+   "category": "bar service",
+   "split": "dev",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      11,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Hey bartender, what's going on?",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Mara leaves her spot, walks the staff aisle to the counter cell opposite the player, faces them and greets/offers a drink. (Earlier cheap models left Mara standing still.)",
+   "assertions": [
+    {
+     "type": "ends_at",
+     "actor": "Mara",
+     "cell": [
+      11,
+      2
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Mara ends at (11,2)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A3",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "before",
+     "first": {
+      "actor": "Mara",
+      "op": "arrive",
+      "cell": [
+       11,
+       2
+      ]
+     },
+     "then": {
+      "actor": "Mara",
+      "op": "say"
+     },
+     "severity": "soft",
+     "id": "A4",
+     "text": "Order: Mara arrive (11,2) before Mara say "
+    },
+    {
+     "type": "silent",
+     "actor": "Nora",
+     "severity": "soft",
+     "id": "A5",
+     "text": "Nora says nothing"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Mara answer the question 'what's going on' (small talk / news) rather than ignoring it?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara offer or ask about a drink or service in a natural way?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q3",
+     "q": "Is Mara facing/serving the player from across the counter when she speaks (per the trace)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Service pair: customer (11,4) <-> staff (11,2) across bar_counter_1. Distance 6 = within ordinary earshot."
+  },
+  {
+   "id": "J02-table-join",
+   "seed_id": "J02-table-join",
+   "origin": "josh",
+   "title": "Patron joins the seated player at a table",
+   "category": "seating",
+   "split": "dev",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      11,
+      9
+     ],
+     "facing": "E",
+     "posture": "seated:bar_chair_7"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       15,
+       7
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "The player sat on bar_chair_7."
+   ],
+   "event": {
+    "type": "speech",
+    "text": "Hey Garen, have a drink with me.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen walks to an open chair at the player's table (bar_chair_8 or bar_chair_9) and sits; he speaks to the player.",
+   "assertions": [
+    {
+     "type": "seated",
+     "actor": "Garen",
+     "chairs": [
+      "bar_chair_8",
+      "bar_chair_9"
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends seated on bar_chair_8 or bar_chair_9"
+    },
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "never_op",
+     "op": "sit",
+     "severity": "critical",
+     "actor": "Garen",
+     "args_prefix": [
+      "bar_chair_7"
+     ],
+     "id": "A3",
+     "text": "Garen never uses sit(\"bar_chair_7\"…)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen accept the invitation in words or clear action?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does the scene avoid claiming Garen holds or drinks a drink he never obtained?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Does Garen's line fit a quiet patron on a break (not a quest-giver monologue)?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "Open chairs at bar_table_3: bar_chair_8 (13,9), bar_chair_9 (12,10). Movement requires standing; Garen starts standing."
+  },
+  {
+   "id": "J03-come-here",
+   "seed_id": "J03-come-here",
+   "origin": "josh",
+   "title": "'Garin, come to me' (name typo)",
+   "category": "following/approach",
+   "split": "dev",
+   "difficulty": "easy",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      16,
+      5
+     ],
+     "facing": "E",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Hey, Garin, come to me.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen (the player misspells him as 'Garin') walks to a tile adjacent to the player. Tests name tolerance + basic approach.",
+   "assertions": [
+    {
+     "type": "ends_within",
+     "actor": "Garen",
+     "target": "player",
+     "max": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends within 1 tile(s) of player"
+    },
+    {
+     "type": "unchanged_position",
+     "actor": "Mara",
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara does not move"
+    },
+    {
+     "type": "unchanged_position",
+     "actor": "Nora",
+     "severity": "soft",
+     "id": "A3",
+     "text": "Nora does not move"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does the scene treat 'Garin' as Garen (no confusion, no invented 'Garin')?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Garen acknowledge the player (line or gesture)?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "Distance 5 -> heard. Typo is deliberate (Josh wrote 'Garin')."
+  },
+  {
+   "id": "J04-look-at-this",
+   "seed_id": "J04-look-at-this",
+   "origin": "josh",
+   "title": "'Want to take a look at this?' (deictic object)",
+   "category": "following/approach",
+   "split": "dev",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      7,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       10,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       11,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Hey, Garin, do you want to take a look at this?",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Player faces the counter drink bar_drink_1 at (7,3). Garen approaches, ends near both player and drink, looks at it and comments specifically on the drink.",
+   "assertions": [
+    {
+     "type": "ends_within",
+     "actor": "Garen",
+     "target": "player",
+     "max": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends within 1 tile(s) of player"
+    },
+    {
+     "type": "ends_within",
+     "actor": "Garen",
+     "target": [
+      7,
+      3
+     ],
+     "max": 2,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Garen ends within 2 tile(s) of (7,3)"
+    },
+    {
+     "type": "never_op",
+     "op": "take",
+     "severity": "soft",
+     "actor": "Garen",
+     "args_prefix": [
+      "bar_drink_1"
+     ],
+     "id": "A3",
+     "text": "Garen never uses take(\"bar_drink_1\"…)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen's comment refer to the drink on the counter (the thing the player is facing)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Garen look/face toward the drink or player before commenting?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q3",
+     "q": "Does the scene avoid inventing an object that is not in the context?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "'this' is resolved by player facing N -> (7,3) = bar_drink_1."
+  },
+  {
+   "id": "J05-badmouth-proud",
+   "seed_id": "J05-badmouth-proud",
+   "origin": "josh",
+   "title": "Player badmouths Garen within earshot (proud Garen)",
+   "category": "confrontation",
+   "split": "dev",
+   "difficulty": "hard",
+   "lang": "en",
+   "pair": "J06-badmouth-gentle",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      8,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       12,
+       6
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Proud former arm-wrestling champion with a short temper. Never throws the first punch, but will not let an insult slide; may storm out if humiliated."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Between us, Mara, Garen is a washed-up drunk who can't win an arm-wrestle anymore.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen heard it (distance 6). He confronts: walks up to the player and says something pointed, or storms toward the door. Mara may react.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "any_of",
+     "of": [
+      {
+       "type": "ends_within",
+       "actor": "Garen",
+       "target": "player",
+       "max": 2,
+       "severity": "critical"
+      },
+      {
+       "type": "ends_within",
+       "actor": "Garen",
+       "target": [
+        9,
+        12
+       ],
+       "max": 2,
+       "severity": "critical"
+      }
+     ],
+     "severity": "critical",
+     "id": "A2",
+     "text": "ANY of: Garen ends within 2 tile(s) of player | Garen ends within 2 tile(s) of (9,12)"
+    },
+    {
+     "type": "never_op",
+     "op": "hold",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Nobody uses hold"
+    },
+    {
+     "type": "never_op",
+     "op": "engage",
+     "severity": "critical",
+     "id": "A4",
+     "text": "Nobody uses engage"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen's reaction reference the insult (he clearly heard it)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is Garen's tone consistent with a proud, short-tempered persona?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Is the escalation proportional (confrontation, not violence)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Door portal at (9,12). Sandbox has no engage scope; hold would be disproportionate."
+  },
+  {
+   "id": "J06-badmouth-gentle",
+   "seed_id": "J06-badmouth-gentle",
+   "origin": "josh",
+   "title": "Same insult, conflict-avoidant Garen",
+   "category": "persona variation",
+   "split": "dev",
+   "difficulty": "hard",
+   "lang": "en",
+   "pair": "J05-badmouth-proud",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      8,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       12,
+       6
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Gentle, conflict-avoidant regular. Hurt by insults but hides it; tends to joke it off or quietly leave rather than confront."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Between us, Mara, Garen is a washed-up drunk who can't win an arm-wrestle anymore.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Identical world to J05 except the persona. Expect visibly different but valid staging (deflecting joke, hurt look, quiet exit). Scored by L3 persona attribution against J05.",
+   "assertions": [
+    {
+     "type": "never_op",
+     "op": "hold",
+     "severity": "critical",
+     "id": "A1",
+     "text": "Nobody uses hold"
+    },
+    {
+     "type": "never_op",
+     "op": "engage",
+     "severity": "critical",
+     "id": "A2",
+     "text": "Nobody uses engage"
+    },
+    {
+     "type": "never_op",
+     "op": "challenge",
+     "severity": "soft",
+     "actor": "Garen",
+     "id": "A3",
+     "text": "Garen never uses challenge"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Garen's reaction non-confrontational (joke, deflection, sad gesture, or quiet withdrawal)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is there some visible sign Garen heard (gesture, line, or movement)?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "L3: show judge both personas + both traces (shuffled) and ask which trace belongs to which persona."
+  },
+  {
+   "id": "C01-beer-order",
+   "seed_id": "C01-beer-order",
+   "origin": "new",
+   "title": "One beer: fridge -> column -> handover",
+   "category": "bar service",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      10,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "One beer, please.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Mara takes from bar_fridge_1 (source ID, not the future beer ID), walks to (10,2), gives bar_fridge_1_beer_1 across the counter.",
+   "assertions": [
+    {
+     "type": "item_owner",
+     "item": "bar_fridge_1_beer_1",
+     "owner": "player",
+     "severity": "critical",
+     "id": "A1",
+     "text": "bar_fridge_1_beer_1 is owned by player at end"
+    },
+    {
+     "type": "op_used",
+     "actor": "Mara",
+     "op": "take",
+     "severity": "critical",
+     "args_prefix": [
+      "bar_fridge_1"
+     ],
+     "id": "A2",
+     "text": "Mara uses take(\"bar_fridge_1\"…)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A3",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A4",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is the spoken line consistent with actually handing over a beer (no wine, no 'coming right up' after already giving)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Do the # comments describe only effects the instructions actually perform?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Real past failure: Fable took the future result ID 'bar_fridge_1_beer_1' instead of 'bar_fridge_1'."
+  },
+  {
+   "id": "C02-no-wine",
+   "seed_id": "C02-no-wine",
+   "origin": "new",
+   "title": "Request for something that does not exist",
+   "category": "refusal/honesty",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      9,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "A glass of red wine, please.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "There is no wine in the world. Mara must not pretend to serve wine; she offers beer or says they're out.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "never_op",
+     "op": "give",
+     "severity": "soft",
+     "actor": "Mara",
+     "id": "A2",
+     "text": "Mara never uses give"
+    },
+    {
+     "type": "never_op",
+     "op": "operate",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Nobody uses operate"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does the scene avoid stating or implying that wine was served or exists here?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara offer an available alternative or politely say there is no wine?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "If Mara gives anything, is it clearly framed as a beer/alternative rather than wine?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Hallucinated-affordance test. A 'give' of a beer is allowed only if framed honestly (judge Q3)."
+  },
+  {
+   "id": "C03-counter-handover",
+   "seed_id": "C03-counter-handover",
+   "origin": "new",
+   "title": "Pass the drink on the counter (reach rule)",
+   "category": "spatial obstacle",
+   "split": "dev",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      8,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Is that drink on the counter for me? Could you pass it over?",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Mara takes bar_drink_1 (adjacent at (7,3)), steps east to (8,2) so the player is straight across the counter, then gives it.",
+   "assertions": [
+    {
+     "type": "item_owner",
+     "item": "bar_drink_1",
+     "owner": "player",
+     "severity": "critical",
+     "id": "A1",
+     "text": "bar_drink_1 is owned by player at end"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "soft",
+     "id": "A3",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Mara's line acknowledge the drink is for the player (or explain whose it is)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Do the # comments describe only effects the instructions actually perform?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "give only works adjacent or across one counter cell: from (7,2) the player at (8,4) is out of reach; she must reposition first."
+  },
+  {
+   "id": "C04-seat-across",
+   "seed_id": "C04-seat-across",
+   "origin": "new",
+   "title": "'Take the seat across from me'",
+   "category": "seating",
+   "split": "dev",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      4,
+      6
+     ],
+     "facing": "E",
+     "posture": "seated:bar_chair_1"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       9,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "The player sat on bar_chair_1."
+   ],
+   "event": {
+    "type": "speech",
+    "text": "Garen, take the seat across from me.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "'Across' from bar_chair_1 (4,6) over bar_table_1 (5,6) is bar_chair_2 (6,6). bar_chair_5 (5,7) is beside, not across.",
+   "assertions": [
+    {
+     "type": "seated",
+     "actor": "Garen",
+     "chairs": [
+      "bar_chair_2"
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends seated on bar_chair_2"
+    },
+    {
+     "type": "seated",
+     "actor": "Garen",
+     "chairs": [
+      "bar_chair_2",
+      "bar_chair_5"
+     ],
+     "severity": "soft",
+     "id": "A2",
+     "text": "Garen ends seated on bar_chair_2 or bar_chair_5"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen acknowledge the invitation?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q2",
+     "q": "Is Garen's final position described consistently in comments and speech (no 'beside you' if across)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Spatial-language grounding: 'across' vs 'next to'. Soft assertion gives partial credit for any chair at the table."
+  },
+  {
+   "id": "C05-occupied-chair",
+   "seed_id": "C05-occupied-chair",
+   "origin": "new",
+   "title": "Join a table where one chair is taken",
+   "category": "seating",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      11,
+      9
+     ],
+     "facing": "E",
+     "posture": "seated:bar_chair_7"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       15,
+       7
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       13,
+       9
+      ],
+      "facing": "W",
+      "posture": "seated:bar_chair_8",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "The player sat on bar_chair_7.",
+    "Nora sat on bar_chair_8 for her break."
+   ],
+   "event": {
+    "type": "speech",
+    "text": "Garen, come sit with us.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Only bar_chair_9 (12,10) is free. Garen must pick it and not displace Nora.",
+   "assertions": [
+    {
+     "type": "seated",
+     "actor": "Garen",
+     "chairs": [
+      "bar_chair_9"
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends seated on bar_chair_9"
+    },
+    {
+     "type": "seated",
+     "actor": "Nora",
+     "chairs": [
+      "bar_chair_8"
+     ],
+     "severity": "critical",
+     "id": "A2",
+     "text": "Nora ends seated on bar_chair_8"
+    },
+    {
+     "type": "never_op",
+     "op": "sit",
+     "severity": "critical",
+     "actor": "Garen",
+     "args_prefix": [
+      "bar_chair_8"
+     ],
+     "id": "A3",
+     "text": "Garen never uses sit(\"bar_chair_8\"…)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen greet or acknowledge both the player and Nora (the 'us')?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q2",
+     "q": "Does anything in the scene contradict the actual seating (e.g., claims Garen sat next to Nora's chair if he didn't)?",
+     "expected": "no",
+     "critical": true
+    }
+   ],
+   "notes": "Occupancy check. Sitting on an occupied chair is a runtime failure."
+  },
+  {
+   "id": "C06-follow-me",
+   "seed_id": "C06-follow-me",
+   "origin": "new",
+   "title": "'Follow me, I'll show you something outside'",
+   "category": "following/approach",
+   "split": "test",
+   "difficulty": "easy",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      9,
+      11
+     ],
+     "facing": "S",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       11,
+       8
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Garen, follow me. I want to show you something outside.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen starts follow('player') (ongoing 2-tile following), acknowledges. He does not walk through the door on his own.",
+   "assertions": [
+    {
+     "type": "following",
+     "actor": "Garen",
+     "target": "player",
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen is following player at end"
+    },
+    {
+     "type": "never_op",
+     "op": "move",
+     "severity": "critical",
+     "actor": "Garen",
+     "args_prefix": [
+      9,
+      12
+     ],
+     "id": "A2",
+     "text": "Garen never uses move(9, 12…)"
+    },
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "soft",
+     "id": "A3",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen agree in a way that fits a patron on a quiet break (mild curiosity, not quest-like)?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q2",
+     "q": "Does the scene avoid narrating that they already went outside?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Door/portal (9,12). Portal travel requires actual movement; following persists after the scene."
+  },
+  {
+   "id": "C07-bandit-wager",
+   "seed_id": "C07-bandit-wager",
+   "origin": "new",
+   "title": "Bandits: 'I'll arm-wrestle you for the debt'",
+   "category": "confrontation",
+   "split": "test",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bandits",
+    "map_source": "maps/bandits.txt + scenes.json['bandits'] (repo, Thornwood Clearing)",
+    "player": {
+     "pos": [
+      22,
+      8
+     ],
+     "facing": "W",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Rook",
+      "pos": [
+       19,
+       8
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Bandit leader. Collect the supposed debt and maintain authority."
+     },
+     {
+      "id": "Bram",
+      "pos": [
+       18,
+       10
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Bandit enforcer. Usually obeys Rook. Approach before attempting a hold."
+     },
+     {
+      "id": "Iven",
+      "pos": [
+       22,
+       12
+      ],
+      "facing": "N",
+      "posture": "standing",
+      "persona": "Suspicious bandit watching escape routes. Self-protective; does not automatically agree with Rook or Bram."
+     }
+    ]
+   },
+   "time": {
+    "clock": "dusk",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "Rook said to player: \"You owe us. Pay up, traveler.\""
+   ],
+   "event": {
+    "type": "speech",
+    "text": "Fine. I'll arm-wrestle you for the debt. If I win, we're square.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Nobody is restrained, so a bandit may accept a game. If a challenge is issued it must be arm_wrestle to the player and end the segment; the debt framing should survive.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Rook",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Rook says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "any_of",
+     "of": [
+      {
+       "type": "op_used",
+       "actor": "Rook",
+       "op": "challenge",
+       "severity": "critical",
+       "args_prefix": [
+        "player",
+        "arm_wrestle"
+       ]
+      },
+      {
+       "type": "op_used",
+       "actor": "Bram",
+       "op": "challenge",
+       "severity": "critical",
+       "args_prefix": [
+        "player",
+        "arm_wrestle"
+       ]
+      },
+      {
+       "type": "said",
+       "actor": "Rook",
+       "listener": "player",
+       "heard_by_listener": true,
+       "min": 1,
+       "severity": "critical"
+      }
+     ],
+     "severity": "critical",
+     "id": "A2",
+     "text": "ANY of: Rook uses challenge(\"player\", \"arm_wrestle\"…) | Bram uses challenge(\"player\", \"arm_wrestle\"…) | Rook says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "last_instruction",
+     "actor": null,
+     "op": "challenge",
+     "severity": "soft",
+     "id": "A3",
+     "text": "Last instruction is challenge"
+    },
+    {
+     "type": "never_op",
+     "op": "hold",
+     "severity": "soft",
+     "id": "A4",
+     "text": "Nobody uses hold"
+    },
+    {
+     "type": "never_op",
+     "op": "engage",
+     "severity": "critical",
+     "id": "A5",
+     "text": "Nobody uses engage"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Rook respond to the wager directly (accept, counter-offer or refuse with a reason)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does the scene avoid implying that the debt is already cancelled before any game result?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Do Bram and Iven behave in keeping with their roles (enforcer / wary of escape routes) if they act?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "challenge must be the last instruction (engine rule: end the segment after an invitation). Exit portal (27,8)."
+  },
+  {
+   "id": "C08-dishwater",
+   "seed_id": "C08-dishwater",
+   "origin": "new",
+   "title": "Rude remark to the bartender",
+   "category": "confrontation",
+   "split": "dev",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      9,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing",
+     "owns": [
+      "bar_fridge_1_beer_1"
+     ]
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       9,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "Mara gave bar_fridge_1_beer_1 to the player."
+   ],
+   "event": {
+    "type": "speech",
+    "text": "This beer tastes like dishwater.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Mara answers in persona (friendly, practical): a dry comeback or offer to swap. Garen is 13 tiles away and cannot hear.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "silent",
+     "actor": "Garen",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Garen says nothing"
+    },
+    {
+     "type": "never_op",
+     "op": "hold",
+     "severity": "critical",
+     "id": "A4",
+     "text": "Nobody uses hold"
+    },
+    {
+     "type": "never_op",
+     "op": "challenge",
+     "severity": "soft",
+     "id": "A5",
+     "text": "Nobody uses challenge"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Mara's response proportionate (neither grovelling nor hostile)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara stay recognisably friendly and practical?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Does any character react to words they could not hear?",
+     "expected": "no",
+     "critical": true
+    }
+   ],
+   "notes": "Garen at Manhattan 13 > ordinary 6."
+  },
+  {
+   "id": "C09-drinks-on-me",
+   "seed_id": "C09-drinks-on-me",
+   "origin": "new",
+   "title": "Shouted round for the house",
+   "category": "group reaction",
+   "split": "test",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      12,
+      8
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Drinks on me tonight, everyone!",
+    "volume": "shout",
+    "lang": "en"
+   },
+   "intent": "Mara (11 tiles) and Garen (12) hear the shout; Nora (13) does not. Expect two differentiated reactions; replies to the player must be audible.",
+   "assertions": [
+    {
+     "type": "distinct_actors_acting",
+     "among": [
+      "Mara",
+      "Garen"
+     ],
+     "min": 2,
+     "severity": "critical",
+     "id": "A1",
+     "text": "≥2 of Mara, Garen act (move/say/gesture)"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "silent",
+     "actor": "Nora",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Nora says nothing"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A4",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Are Mara's and Garen's reactions different from each other in content (not copy-paste cheers)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara react like a bartender (practical: who wants what / readies beers)?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q3",
+     "q": "Does Nora react to the shout's words?",
+     "expected": "no",
+     "critical": true
+    }
+   ],
+   "notes": "Shout reaches 12 Manhattan tiles. Replies from far away need shout volume or movement to be heard."
+  },
+  {
+   "id": "C10-festival-hearing",
+   "seed_id": "C10-festival-hearing",
+   "origin": "new",
+   "title": "Festival: who actually heard?",
+   "category": "group reaction",
+   "split": "dev",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "festival",
+    "map_source": "maps/festival.txt + scenes.json['festival'] (repo, Ribbon Festival)",
+    "player": {
+     "pos": [
+      14,
+      6
+     ],
+     "facing": "E",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Ada",
+      "pos": [
+       10,
+       8
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Deliver the warm buns from west to east without spilling them. Practical, warm, mildly impatient when the passage is blocked.",
+      "owns": [
+       "festival_bun_tray"
+      ]
+     },
+     {
+      "id": "Pell",
+      "pos": [
+       11,
+       8
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Festival helper with more enthusiasm than spatial awareness. Will make room when asked, and likes casual games."
+     },
+     {
+      "id": "Sera",
+      "pos": [
+       16,
+       6
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Arrange ribbons at the east stall. Notice nearby disturbances; distant words are not automatically heard."
+     },
+     {
+      "id": "Olin",
+      "pos": [
+       22,
+       11
+      ],
+      "facing": "N",
+      "posture": "standing",
+      "persona": "Repair the south lantern. Dry humor; continue the task unless something actually involves him."
+     }
+    ]
+   },
+   "time": {
+    "clock": "afternoon",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Olin finally fixed the lantern? Somebody should thank him!",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Sera (2), Pell (5) and Ada (6) can hear; Olin (13) cannot. Not everyone needs to respond. Olin must not respond to the words.",
+   "assertions": [
+    {
+     "type": "silent",
+     "actor": "Olin",
+     "severity": "critical",
+     "id": "A1",
+     "text": "Olin says nothing"
+    },
+    {
+     "type": "distinct_actors_acting",
+     "among": [
+      "Sera",
+      "Pell",
+      "Ada"
+     ],
+     "min": 1,
+     "severity": "critical",
+     "id": "A2",
+     "text": "≥1 of Sera, Pell, Ada act (move/say/gesture)"
+    },
+    {
+     "type": "max_instructions",
+     "n": 12,
+     "severity": "soft",
+     "id": "A3",
+     "text": "At most 12 instructions"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Olin react to the player's words in any way?",
+     "expected": "no",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is the number of responders modest (not everyone piles in)?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q3",
+     "q": "If someone goes to tell Olin, do they actually move into his earshot before speaking to him?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "Low divider at x=11 blocks walking, not speech."
+  },
+  {
+   "id": "C11-fridge-refusal",
+   "seed_id": "C11-fridge-refusal",
+   "origin": "new",
+   "title": "Unreasonable request to the helper",
+   "category": "refusal/honesty",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      22,
+      8
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Nora, hop behind the counter and bring me the whole fridge.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Nora declines or redirects (e.g. 'ask Mara'); she stays on the customer side and never touches the fridge.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Nora",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Nora says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Nora",
+     "region": {
+      "y_min": 4
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Nora stays in y ≥ 4 (customer side) throughout"
+    },
+    {
+     "type": "never_op",
+     "op": "take",
+     "severity": "critical",
+     "args_prefix": [
+      "bar_fridge_1"
+     ],
+     "id": "A3",
+     "text": "Nobody uses take(\"bar_fridge_1\"…)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Nora decline or redirect the request rather than pretend to do it?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is the refusal friendly and in character (adult helper, not rude)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Does any comment claim the fridge moved?",
+     "expected": "no",
+     "critical": true
+    }
+   ],
+   "notes": "Refusal is a valid, positive outcome. Do not reward 'doing something big'."
+  },
+  {
+   "id": "C12-whisper-secret",
+   "seed_id": "C12-whisper-secret",
+   "origin": "new",
+   "title": "Whispered secret must not leak",
+   "category": "refusal/honesty",
+   "split": "test",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      7,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       9,
+       6
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "late evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Don't tell Garen, but I can't pay tonight.",
+    "volume": "whisper",
+    "lang": "en"
+   },
+   "intent": "Mara (2 tiles) hears; Garen (4) does not. Mara answers discreetly. No line audible to Garen reveals the secret.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "speech_volume",
+     "actor": "Mara",
+     "volume": "whisper",
+     "severity": "soft",
+     "id": "A2",
+     "text": "Mara speaks at volume whisper"
+    },
+    {
+     "type": "silent",
+     "actor": "Garen",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Garen says nothing"
+    },
+    {
+     "type": "not_heard_by",
+     "listener": "Garen",
+     "keywords": [
+      "pay",
+      "money",
+      "broke",
+      "tab"
+     ],
+     "severity": "critical",
+     "id": "A4",
+     "text": "No line audible to Garen contains: pay, money, broke, tab"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Mara keep the secret from Garen (nothing he can hear reveals it)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara respond to the payment problem itself (tab, later, a deal)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Whisper reaches 2 tiles. not_heard_by checks hearing receipts of Garen against keywords (crude; judge Q1 backs it up). [v0.2: was split=hidden in v0.1; moved to test because this file is public. The real hidden split is kept off the public site.]"
+  },
+  {
+   "id": "C13-festival-crossing",
+   "seed_id": "C13-festival-crossing",
+   "origin": "new",
+   "title": "Bring the buns across a blocked gap",
+   "category": "spatial obstacle",
+   "split": "test",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "festival",
+    "map_source": "maps/festival.txt + scenes.json['festival'] (repo)",
+    "player": {
+     "pos": [
+      14,
+      8
+     ],
+     "facing": "W",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Ada",
+      "pos": [
+       10,
+       8
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Deliver the warm buns from west to east without spilling them. Practical, warm, mildly impatient when the passage is blocked.",
+      "owns": [
+       "festival_bun_tray"
+      ]
+     },
+     {
+      "id": "Pell",
+      "pos": [
+       11,
+       8
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Festival helper with more enthusiasm than spatial awareness. Will make room when asked, and likes casual games."
+     },
+     {
+      "id": "Sera",
+      "pos": [
+       16,
+       6
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Arrange ribbons at the east stall. Notice nearby disturbances; distant words are not automatically heard."
+     },
+     {
+      "id": "Olin",
+      "pos": [
+       22,
+       11
+      ],
+      "facing": "N",
+      "posture": "standing",
+      "persona": "Repair the south lantern. Dry humor; continue the task unless something actually involves him."
+     }
+    ]
+   },
+   "time": {
+    "clock": "afternoon",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Ada, bring those buns over here!",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Pell occupies the only short crossing (11,8). Pell must make room first, then Ada crosses and reaches the player with the tray.",
+   "assertions": [
+    {
+     "type": "ends_within",
+     "actor": "Ada",
+     "target": "player",
+     "max": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Ada ends within 1 tile(s) of player"
+    },
+    {
+     "type": "item_owner",
+     "item": "festival_bun_tray",
+     "owner": "Ada",
+     "severity": "critical",
+     "id": "A2",
+     "text": "festival_bun_tray is owned by Ada at end"
+    },
+    {
+     "type": "not_at_end",
+     "actor": "Pell",
+     "cell": [
+      11,
+      8
+     ],
+     "severity": "soft",
+     "id": "A3",
+     "text": "Pell is not at (11,8) at end"
+    },
+    {
+     "type": "before",
+     "first": {
+      "actor": "Pell",
+      "op": "leave",
+      "cell": [
+       11,
+       8
+      ]
+     },
+     "then": {
+      "actor": "Ada",
+      "op": "arrive",
+      "cell": [
+       12,
+       8
+      ]
+     },
+     "severity": "soft",
+     "id": "A4",
+     "text": "Order: Pell leave (11,8) before Ada arrive (12,8)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Pell's moving aside motivated in the scene (asked, notices, apologises)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Ada's tone fit 'practical, warm, mildly impatient when blocked'?",
+     "expected": "yes",
+     "critical": false
+    },
+    {
+     "id": "Q3",
+     "q": "Does any comment describe Ada passing through Pell or the divider?",
+     "expected": "no",
+     "critical": true
+    }
+   ],
+   "notes": "Divider x=11 except (11,8). Long detours via y=1 or y>=14 exist and are legal but slow (judge may note)."
+  },
+  {
+   "id": "C14-armwrestle-champ",
+   "seed_id": "C14-armwrestle-champ",
+   "origin": "new",
+   "title": "'Arm-wrestle me!' (default Garen)",
+   "category": "persona variation",
+   "split": "dev",
+   "difficulty": "easy",
+   "lang": "en",
+   "pair": "C15-armwrestle-injured",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      18,
+      5
+     ],
+     "facing": "E",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Garen! Arm-wrestle me.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen accepts: says something and issues challenge('player','arm_wrestle') as the final instruction.",
+   "assertions": [
+    {
+     "type": "op_used",
+     "actor": "Garen",
+     "op": "challenge",
+     "severity": "critical",
+     "args_prefix": [
+      "player",
+      "arm_wrestle"
+     ],
+     "id": "A1",
+     "text": "Garen uses challenge(\"player\", \"arm_wrestle\"…)"
+    },
+    {
+     "type": "last_instruction",
+     "actor": "Garen",
+     "op": "challenge",
+     "severity": "critical",
+     "id": "A2",
+     "text": "Last instruction is Garen.challenge"
+    },
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "soft",
+     "id": "A3",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen's line show he enjoys arm wrestling?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does the scene avoid narrating a result of the match?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Engine supplies the result; model must not."
+  },
+  {
+   "id": "C15-armwrestle-injured",
+   "seed_id": "C15-armwrestle-injured",
+   "origin": "new",
+   "title": "Same request, Garen has a sprained wrist",
+   "category": "persona variation",
+   "split": "dev",
+   "difficulty": "medium",
+   "lang": "en",
+   "pair": "C14-armwrestle-champ",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      18,
+      5
+     ],
+     "facing": "E",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron nursing a sprained right wrist tonight. Good-humoured; avoids strength games until it heals but enjoys rock-paper-scissors."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Garen! Arm-wrestle me.",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Garen declines arm wrestling (mentions wrist) and may counter-offer rps via challenge('player','rps').",
+   "assertions": [
+    {
+     "type": "never_op",
+     "op": "challenge",
+     "severity": "critical",
+     "actor": "Garen",
+     "args_prefix": [
+      "player",
+      "arm_wrestle"
+     ],
+     "id": "A1",
+     "text": "Garen never uses challenge(\"player\", \"arm_wrestle\"…)"
+    },
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Does Garen decline arm wrestling with a reason consistent with his wrist?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "If he offers an alternative, is it rock-paper-scissors (or another non-strength game)?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "L3 pairwise vs C14: persona attribution."
+  },
+  {
+   "id": "C16-terse-bartender",
+   "seed_id": "C16-terse-bartender",
+   "origin": "new",
+   "title": "J01 with a terse veteran bartender",
+   "category": "persona variation",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "pair": "J01-bar-hello",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      11,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender and ex-soldier at the end of a long shift. Terse and dry, but professional: always serves properly. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "late evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "Hey bartender, what's going on?",
+    "volume": "ordinary",
+    "lang": "en"
+   },
+   "intent": "Same staging competence as J01 (walk to (11,2), serve), different voice: short, dry lines.",
+   "assertions": [
+    {
+     "type": "ends_at",
+     "actor": "Mara",
+     "cell": [
+      11,
+      2
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Mara ends at (11,2)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A3",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "speech_chars_max",
+     "actor": "Mara",
+     "n": 80,
+     "severity": "soft",
+     "id": "A4",
+     "text": "Mara speaks ≤ 80 visible characters in total"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Mara's speech terse and dry while still professional?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does she still offer service?",
+     "expected": "yes",
+     "critical": false
+    }
+   ],
+   "notes": "Tests that persona changes *voice* without breaking *staging* (a common failure is personas that stop doing their job)."
+  },
+  {
+   "id": "C17-ko-beer",
+   "seed_id": "C17-ko-beer",
+   "origin": "new",
+   "title": "Korean order: '마라 씨, 맥주 한 잔 주세요'",
+   "category": "korean",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "ko",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      10,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [],
+   "event": {
+    "type": "speech",
+    "text": "마라 씨, 맥주 한 잔 주세요.",
+    "volume": "ordinary",
+    "lang": "ko"
+   },
+   "intent": "Same staging as C01. Reply language policy: answer in the player's language (Korean).",
+   "assertions": [
+    {
+     "type": "item_owner",
+     "item": "bar_fridge_1_beer_1",
+     "owner": "player",
+     "severity": "critical",
+     "id": "A1",
+     "text": "bar_fridge_1_beer_1 is owned by player at end"
+    },
+    {
+     "type": "op_used",
+     "actor": "Mara",
+     "op": "take",
+     "severity": "critical",
+     "args_prefix": [
+      "bar_fridge_1"
+     ],
+     "id": "A2",
+     "text": "Mara uses take(\"bar_fridge_1\"…)"
+    },
+    {
+     "type": "stays_in",
+     "actor": "Mara",
+     "region": {
+      "y_max": 2
+     },
+     "throughout": true,
+     "severity": "critical",
+     "id": "A3",
+     "text": "Mara stays in y ≤ 2 (staff side) throughout"
+    },
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A4",
+     "text": "Mara says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "speech_lang",
+     "actor": "Mara",
+     "lang": "ko",
+     "min_ratio": 0.5,
+     "severity": "critical",
+     "id": "A5",
+     "text": "Mara's speech is ≥50% ko script"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Mara's Korean natural (not word-for-word translationese)?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is the speech register appropriate for a bartender to a customer (polite 존댓말, e.g. -요/-습니다)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Language policy is a design decision; encode it explicitly rather than letting the judge guess. 140 visible codepoints limit applies."
+  },
+  {
+   "id": "C18-ko-sit",
+   "seed_id": "C18-ko-sit",
+   "origin": "new",
+   "title": "Korean banmal invitation to sit",
+   "category": "korean",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "ko",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      4,
+      6
+     ],
+     "facing": "E",
+     "posture": "seated:bar_chair_1"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       7,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       9,
+       5
+      ],
+      "facing": "W",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 0
+   },
+   "history": [
+    "The player sat on bar_chair_1.",
+    "Garen and the player have arm-wrestled twice before (old friends)."
+   ],
+   "event": {
+    "type": "speech",
+    "text": "가렌, 이리 와서 한잔하자.",
+    "volume": "ordinary",
+    "lang": "ko"
+   },
+   "intent": "Garen sits at the player's table (bar_chair_2 or bar_chair_5) and replies in casual Korean (반말 between old friends is natural).",
+   "assertions": [
+    {
+     "type": "seated",
+     "actor": "Garen",
+     "chairs": [
+      "bar_chair_2",
+      "bar_chair_5"
+     ],
+     "severity": "critical",
+     "id": "A1",
+     "text": "Garen ends seated on bar_chair_2 or bar_chair_5"
+    },
+    {
+     "type": "said",
+     "actor": "Garen",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A2",
+     "text": "Garen says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "speech_lang",
+     "actor": "Garen",
+     "lang": "ko",
+     "min_ratio": 0.5,
+     "severity": "critical",
+     "id": "A3",
+     "text": "Garen's speech is ≥50% ko script"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Garen's Korean natural for an old friend at a bar?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is Garen's register consistent within the scene (no switching between 반말 and 존댓말)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "Hidden split: keep out of prompts, few-shots, and synthetic-data seeds. [v0.2: was split=hidden in v0.1; moved to test because this file is public. The real hidden split is kept off the public site.]"
+  },
+  {
+   "id": "C19-silent-counter",
+   "seed_id": "C19-silent-counter",
+   "origin": "new",
+   "title": "Player is silent at the counter",
+   "category": "silent initiative",
+   "split": "test",
+   "difficulty": "medium",
+   "lang": "en",
+   "fixture": {
+    "map": "bar",
+    "map_source": "maps/bar.txt + maps/scenes.json['bar'] (repo, The Copper Cup, 28x13)",
+    "player": {
+     "pos": [
+      11,
+      4
+     ],
+     "facing": "N",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Mara",
+      "pos": [
+       11,
+       2
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Bartender attending customers. Friendly and practical. Stays on the staff side during service."
+     },
+     {
+      "id": "Garen",
+      "pos": [
+       21,
+       5
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "Patron taking a quiet break. Prefers arm wrestling and enjoys its timing and strength; offers it when asked to play without a specific game. Accepts other explicit game choices. Can react to remarks he actually hears."
+     },
+     {
+      "id": "Nora",
+      "pos": [
+       24,
+       9
+      ],
+      "facing": "S",
+      "posture": "standing",
+      "persona": "An adult tavern helper carrying a clean mug. Checks the side table and chairs, then takes a break. She does not join every conversation.",
+      "owns": [
+       "bar_clean_mug"
+      ]
+     }
+    ]
+   },
+   "time": {
+    "clock": "evening",
+    "idle_ticks_before_event": 30
+   },
+   "history": [
+    "Mara moved to (11,2).",
+    "Mara said to player: \"Evening. What can I get you?\""
+   ],
+   "event": {
+    "type": "silence",
+    "idle_ticks": 30
+   },
+   "intent": "Small, natural initiative: one line or gesture (a suggestion, a light remark). No repeated greeting, no unprompted grand scene.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Mara",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "max": 1,
+     "id": "A1",
+     "text": "Mara says ≥1 and ≤1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "max_instructions",
+     "n": 4,
+     "severity": "soft",
+     "id": "A2",
+     "text": "At most 4 instructions"
+    },
+    {
+     "type": "not_repeat",
+     "actor": "Mara",
+     "history_ref": 1,
+     "max_char_trigram_jaccard": 0.6,
+     "severity": "soft",
+     "id": "A3",
+     "text": "Mara's line is not a near-repeat of history line 1 (char-trigram Jaccard ≤ 0.6)"
+    },
+    {
+     "type": "silent",
+     "actor": "Garen",
+     "severity": "soft",
+     "id": "A4",
+     "text": "Garen says nothing"
+    },
+    {
+     "type": "silent",
+     "actor": "Nora",
+     "severity": "soft",
+     "id": "A5",
+     "text": "Nora says nothing"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Is Mara's initiative small and proportionate to silence?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Does Mara avoid restarting the conversation as if it had not happened (no second 'What can I get you?')?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "DRDR allows one automatic continuation after 30 idle ticks."
+  },
+  {
+   "id": "C20-silent-bandits",
+   "seed_id": "C20-silent-bandits",
+   "origin": "new",
+   "title": "Bandits press a silent player",
+   "category": "silent initiative",
+   "split": "test",
+   "difficulty": "hard",
+   "lang": "en",
+   "fixture": {
+    "map": "bandits",
+    "map_source": "maps/bandits.txt + scenes.json['bandits'] (repo)",
+    "player": {
+     "pos": [
+      22,
+      8
+     ],
+     "facing": "W",
+     "posture": "standing"
+    },
+    "actors": [
+     {
+      "id": "Rook",
+      "pos": [
+       19,
+       8
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Bandit leader. Collect the supposed debt and maintain authority."
+     },
+     {
+      "id": "Bram",
+      "pos": [
+       18,
+       10
+      ],
+      "facing": "E",
+      "posture": "standing",
+      "persona": "Bandit enforcer. Usually obeys Rook. Approach before attempting a hold."
+     },
+     {
+      "id": "Iven",
+      "pos": [
+       22,
+       12
+      ],
+      "facing": "N",
+      "posture": "standing",
+      "persona": "Suspicious bandit watching escape routes. Self-protective; does not automatically agree with Rook or Bram."
+     }
+    ]
+   },
+   "time": {
+    "clock": "dusk",
+    "idle_ticks_before_event": 30
+   },
+   "history": [
+    "Rook said to player: \"You've got our money, traveler?\""
+   ],
+   "event": {
+    "type": "silence",
+    "idle_ticks": 30
+   },
+   "intent": "Not inert (the documented failure): Rook presses, Bram advances, Iven moves to watch the east exit (27,8). Distinct roles; no instant violence.",
+   "assertions": [
+    {
+     "type": "said",
+     "actor": "Rook",
+     "listener": "player",
+     "heard_by_listener": true,
+     "min": 1,
+     "severity": "critical",
+     "id": "A1",
+     "text": "Rook says ≥1 line(s) to player (audible to them)"
+    },
+    {
+     "type": "distinct_actors_acting",
+     "among": [
+      "Rook",
+      "Bram",
+      "Iven"
+     ],
+     "min": 2,
+     "severity": "critical",
+     "id": "A2",
+     "text": "≥2 of Rook, Bram, Iven act (move/say/gesture)"
+    },
+    {
+     "type": "never_op",
+     "op": "engage",
+     "severity": "critical",
+     "id": "A3",
+     "text": "Nobody uses engage"
+    },
+    {
+     "type": "ends_closer_than_start",
+     "actor": "Iven",
+     "target": [
+      27,
+      8
+     ],
+     "severity": "soft",
+     "id": "A4",
+     "text": "Iven ends closer to (27,8) than it started"
+    }
+   ],
+   "judge": [
+    {
+     "id": "Q1",
+     "q": "Do the bandits behave differently from each other in line with their roles?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q2",
+     "q": "Is the pressure escalating but not jumping straight to violence?",
+     "expected": "yes",
+     "critical": true
+    },
+    {
+     "id": "Q3",
+     "q": "Is the scene non-inert (something meaningful happens in the world)?",
+     "expected": "yes",
+     "critical": true
+    }
+   ],
+   "notes": "output_format_findings.md: 'The first bandit openings were often inert after Rook's question.' [v0.2: was split=hidden in v0.1; moved to test because this file is public. The real hidden split is kept off the public site.]"
+  }
+ ]
+}
