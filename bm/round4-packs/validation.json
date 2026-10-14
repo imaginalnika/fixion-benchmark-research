@@ -1,0 +1,26 @@
+{
+  "status": "pass",
+  "validated_at": "2026-10-14T13:54:19.119597+00:00",
+  "independent_of_builder": true,
+  "checks": 3599,
+  "records": 75,
+  "archived_records": 75,
+  "actual_kit_records": 0,
+  "strategies": 28,
+  "original_prompts": 6,
+  "cohorts": {
+    "figgs_proxy": 15,
+    "direct9b": 27,
+    "myth_proxy": 15,
+    "native35b": 18
+  },
+  "archived_finish_reasons": {
+    "length": 74,
+    "eos": 1
+  },
+  "source_files_checked": 82,
+  "errors": [],
+  "scope": "Exact raw strings, original sources and hashes, bytes/tokens/stops, model-role/sampler provenance, complete archive inventory, imported real-run eligibility, registry coverage/run entries, HTML payload, Markdown text, and local links. No model inference or taste assessment.",
+  "manifest_sha256": "c91dbb2c8399c6778bca5f658aec7a33839da6a5e3aa751c29e9bcf9550dc5d8",
+  "html_sha256": "89a68661d0d01f7c43cb4c1ddd063adec6f5034a4ff77f472c6ee1f30b603bcc"
+}

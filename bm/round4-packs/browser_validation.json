@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "engine": "Google Chrome headless via local CDP",
+  "checked_records": 75,
+  "coverage_cards": 28,
+  "fulltext_and_json_view_roundtrip": true,
+  "same_original_prompt_in_both_panels": true,
+  "mobile": {
+    "width": 390,
+    "scroll": 390,
+    "panels": "362px"
+  },
+  "note": "Browser checks cover all75actual archived records, exact prose/JSON text, all28coveragecards and a390px mobile layout; fixture importer tests are separate."
+}
