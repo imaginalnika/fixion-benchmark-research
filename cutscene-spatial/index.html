@@ -1,0 +1,468 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fixion: what a robotics/VLA expert would change</title>
+<style>body{font:16px/1.55 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:960px;margin:40px auto;padding:0 20px;color:#1b1b1b}
+h1{font-size:1.8em} h2{margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px} table{border-collapse:collapse;margin:1em 0;font-size:0.92em}
+th,td{border:1px solid #ccc;padding:4px 8px;text-align:left} th{background:#f3f3f3} code{background:#f6f6f6;padding:1px 4px;border-radius:3px}
+pre{background:#f6f6f6;padding:12px;overflow-x:auto;border-radius:6px} em{color:#444}</style></head><body><h1 id="what-a-robotics-vla-expert-would-change-about-fixions-scene-architecture">What a robotics / VLA expert would change about Fixion's scene architecture</h1>
+<p><em>Research report for Josh Cho (Fixion / dr-dr), 15 October 2026. Workspace: <code>/workspace/cutscene-research</code>. Every number below comes from runs whose prompts, raw outputs and scores are in <code>results/runs/*.jsonl</code>; every paper link was opened by me or by a research agent that tagged its confidence. Spend: about $9.16 of the $20 OpenRouter budget (final figure in <code>budget.json</code>), $0 of the $15 RunPod budget, roughly $0.05 of Jev usage.</em></p>
+<h2 id="1-the-one-paragraph-answer">1. The one-paragraph answer</h2>
+<p>A robotics person would say Fixion has a perfect sensor and no state estimator, no affordance layer, and the wrong action space. The director is handed a printout of every tile and asked to do geometry in its head (which tile is across the counter, who is within six tiles, which chair mirrors mine), then to type coordinates. Robots stopped doing that years ago: perception becomes a scene graph of entities, relations and named "spots"; the planner only chooses among actions the controller has already verified it can execute; the controller owns geometry. Applied to Fixion the change is small in code and large in effect. Keep the engine's facts, but let the engine also compute the handful of relations the model keeps getting wrong (service tile opposite the player, seats across a table, who is in earshot, handover reach, where to stand to take from the fridge) and expose them as named candidates; let the model emit intent by id (<code>serve_at_counter("player")</code>, <code>sit_with("player")</code>, <code>fetch_and_give("beer","player")</code>), not <code>move(x,y)</code>; expand the intent into tiles in the engine at execution time, and feed failures back as typed facts. On our 45-case benchmark built from the real maps, that change takes cheap models from about 52% to 91–99% spatially correct scenes and the production model from 91% to 100%, while a 200 ms decision model (Jev) choosing among engine-generated candidates reaches 89–90% at a quarter of the cost. The representation format by itself (ASCII, scene-graph JSON, rendered image, egocentric text) does not fix anything; images and ASCII make it worse. The online-world idea follows directly: the engine owns the scene and patches it per event, a per-NPC perception filter decides who noticed, and a cheap typed decision model decides when an NPC should react at all.</p>
+<h2 id="2-a-plain-language-primer-the-robotics-ideas-that-matter-here">2. A plain-language primer: the robotics ideas that matter here</h2>
+<ol>
+<li><strong>Perception vs. state estimation.</strong> A robot's camera sees pixels; a state estimator turns them into "there is a mug at (0.4, 0.2), the drawer is closed". Fixion's engine already has perfect state. The mistake is to hand that raw state to the language model and let it do the estimation of what matters. In robotics terms, Fixion has a perfect sensor and no state estimator.</li>
+<li><strong>Scene graphs.</strong> Robots summarise a room as a graph: nodes for rooms, furniture, objects, people; edges for "on", "next to", "reachable from". Planners such as SayPlan (<a href="https://arxiv.org/abs/2307.06135">Rana et al. 2023</a>) read this graph instead of coordinates and prune it to what the task needs. For Fixion a 30-node graph with edges like <code>adjacent</code>, <code>across_counter</code>, <code>seated_at</code>, <code>in_earshot</code> plus named spots (service tile, seats, fridge access tile) is the natural replacement for a flat list of coordinates and wall runs.</li>
+<li><strong>Affordances.</strong> An affordance is "what can be done with this, from here, now": the fridge affords <code>take</code> from the tile beside it; the counter affords <code>give across</code> between a staff tile and the customer tile in front of it. SayCan's insight (<a href="https://arxiv.org/abs/2204.01691">Ahn et al. 2022</a>) is to let the engine compute feasibility and let the language model only express preference. The Sims shipped this in 2000: every object behaviour carries a procedure, a feasibility check and an advertisement, and the Sim merely picks the best advertised option (<a href="https://qrg.northwestern.edu/papers/Files/Programming_Objects_in_The_Sims.pdf">Forbus &amp; Wright 2001</a>).</li>
+<li><strong>Action spaces, tokenisation, chunking.</strong> Robot foundation models never emit free numbers: RT-2 and OpenVLA pick from a fixed vocabulary of discretised actions with decoding masked to valid tokens, and they emit short chunks rather than one step at a time (<a href="https://arxiv.org/abs/2307.15818">Brohan et al. 2023</a>; <a href="https://arxiv.org/abs/2406.09246">Kim et al. 2024</a>; <a href="https://arxiv.org/abs/2304.13705">Zhao et al. 2023</a>). Fixion's <code>move(x,y)</code> is the equivalent of letting a language model type joint angles.</li>
+<li><strong>Hierarchical policies.</strong> Modern VLAs split into a high-level language policy ("go to the counter, hand over the beer") and a low-level controller that produces motion (pi0.5, Hi Robot, RT-H). The levels fail differently: language models are good at intent and bad at geometry, path planners are the reverse. Fixion already has the low level (BFS, approach); it is missing the middle: skills.</li>
+<li><strong>Grounding and candidate scoring.</strong> Grounding ties words ("that drink", "Garin", "the seat across from me") to entities. The robust pattern is enumerate-then-select: code lists candidates with labels, a model chooses. Generative Agents did exactly this ("must be one of the options, verbatim") and left walking to a path planner (<a href="https://arxiv.org/abs/2304.03442">Park et al. 2023</a>).</li>
+<li><strong>Constrained action spaces / structured outputs.</strong> Ask for a JSON object whose fields are enums of valid names and candidate ids, so invalid targets are unrepresentable. The literature warns that heavy grammar constraints can hurt reasoning on small models, so constrain the answer, not the thinking (<a href="https://arxiv.org/abs/2408.02442">Tam et al. 2024</a> and the rebuttals cited in <code>lit/structured_outputs_tool_calling.md</code>).</li>
+<li><strong>Closed-loop replanning (verify, then act).</strong> Robots simulate a plan against their world model before executing it and feed errors back as text (Inner Monologue, SayPlan's <code>verify_plan</code>, LLM-Modulo). Fixion validates at admission and interrupts at execution; a dry run in the engine with a typed failure message turns most interruptions into one corrected program.</li>
+<li><strong>World models and belief state.</strong> The engine owns the truth and patches it incrementally after each action (a new beer object, a broken chair); a per-NPC belief is what that NPC perceived. Models that keep their own state hallucinate it (Statler's documented failures; GPT-4 predicts only 60% of full post-action states on ByteSized32, cited in <code>lit/online_world_state.md</code>).</li>
+<li><strong>Set-of-mark / visual prompting.</strong> Vision models ground references through labels (ids on objects, a coordinate grid), not raw pixels. The text analogue: give every spot and object an id and refer to ids, never raw coordinates. For grids, text with ids beats images for every current model family (SpatialEval, BALROG, SPACE, lmgame-Bench).</li>
+</ol>
+<h2 id="3-diagnosis-of-the-current-pipeline">3. Diagnosis of the current pipeline</h2>
+<p><strong>What the director really sees and emits.</strong> I read <code>director.rb</code>, <code>scene_context.rb</code>, <code>campaign_context.rb</code>, <code>map.rb</code>, <code>scene_runtime.rb</code> and the production request log (<code>requests.md</code>, 993 entries, 11–16 September). The live pipeline no longer sends an ASCII map: the September-11 era (lettered coordinates such as "E10", chain-of-thought smuggled into arguments, 20 "invalid game code" errors) was replaced by Scene API v2, which sends a flat text dump of facts: 20+ object lines with cells and owners, five wall runs, three lines per NPC (state, offset from the player, four neighbours), a counter-service hint, earshot rules, holds, pending actions, ambient notes, 18 history lines, and the event. About 2.9k input tokens per call at $10/M on <code>gpt-6-astra</code>. The model answers with <code># comment</code> / <code>Name.op(json)</code> pairs. In 126 production generations the op mix was: say 110, gesture 34, move 20, face 14, approach 8, step 7, give 4, sit 4, take 3, hold 2. The director mostly talks.</p>
+<p><strong>Where it breaks, with evidence.</strong></p>
+<ol>
+<li><em>Valid but inert staging.</em> In 42 bar generations with the player at the counter, Mara walked to the service tile in 4 and was already there in 6; otherwise she spoke from wherever she stood or stayed silent. In our benchmark the cheap models reproduce this exactly: under the current DSL the service-staging family passes 5–10% of the time (a bartender answering from four tiles down the counter is "valid"). Astra stages correctly; cheaper models do not.</li>
+<li><em>The failures that reach the player are dynamic, not static.</em> The log holds 13 runtime interruptions: "listener left earshot while speech was in progress", "holding requires adjacent physical contact", "recipient is no longer within handover reach". Replaying the same 62 executable production programs through our port of the engine, only 2 fail statically (97% statically valid). The player moved while the model planned or spoke, and nothing in the pipeline re-plans: <code>move(x,y)</code> and <code>give</code> are bound to tiles chosen seconds earlier.</li>
+<li><em>Affordance confusion built into the DSL.</em> <code>approach()</code> accepts characters only, so a model that wants to reach the fridge writes <code>approach("bar_fridge_1")</code> (seen in our runs) and is rejected; <code>take()</code> needs the fridge id while the dump also advertises the future beer id; <code>give()</code> needs reach but reach is a rule in prose, not a listed fact. The production model fails "fetch a beer" 17% of the time under the facts dump and 0% once the dump says "to take from bar_fridge_1 stand at (7,2); handover reach: adjacent or across one counter cell".</li>
+<li><em>Geometry left to the model.</em> "The seat across from me", "the tile opposite the player across the counter", "within earshot after I move" require mirror and Manhattan computations. Jev picks the wrong chair from raw coordinates (0.45 confidence) and the right one at 1.0 once the engine labels "bar_chair_4, directly across the table from the player".</li>
+<li><em>Parse fragility.</em> 6 of 64 complete production responses fail the parser (odd pair counts, unquoted arguments); canceled streams add partial programs. Cheap models drop receiver names entirely (<code>face("player")</code> without <code>Mara.</code>). Structured outputs remove this class.</li>
+<li><em>Prompt bloat without relevance.</em> Everything is sent every time. The pruned, structured state the literature recommends is both cheaper and more accurate.</li>
+</ol>
+<p><strong>What is not the problem.</strong> Not the ASCII map (already gone). Not the engine's BFS or validator (sound; the executor port passes a golden diff against a production prompt). Not parse validity on the production model (about 97% statically). The director simply is never told which action is right and is asked to compute what the engine already knows.</p>
+<h2 id="4-the-benchmark-we-built-fsab-and-how-we-measured">4. The benchmark we built (FSAB) and how we measured</h2>
+<p>I ported the game's spatial core to Python (<code>fixion_sim/</code>: maps, object registry, BFS, approach, earshot, handover reach, seating, holds, parallel groups, the instruction parser with the engine's exact error strings, and the prompt builder). Its description of the bar state is byte-identical to the production prompt in the log (37 tests, golden diff). On that port I built the Fixion Spatial-Action Benchmark: 45 cases on the real maps (bar, outside, bandits, festival, courtyard, three Lowwater campaign rooms). A case fixes a room state (tiles, facings, postures, inventories, a few history lines) and an event (a typed utterance with volume, or a world event such as "player walked up to the counter"), and checks predicates on the final state after executing the model's program. Families: service staging (10), come-here including a misspelled name (8), fetch-and-hand a beer (6), earshot (6 after reclassification), campaign navigation (3), seat choice including "the seat across from me" (2), deictic objects (3), refusal (2), world events (2), blocked route, restraint, multi-NPC. A case passes when every critical predicate holds (for example: Mara ends on the staff tile directly across the counter from the player, speaks to the player within range, and no instruction fails; a beer order passes if the player holds the beer or it lies on the counter cell in front of them). Metrics: critical pass, full-parse rate, no-runtime-error rate, OpenRouter-reported cost per call, latency; Wilson 95% intervals; paired McNemar tests on identical case/seed pairs. Parsing is streaming-faithful: the valid prefix executes, like the engine. Two mistakes I made and fixed are recorded in <code>LOG.md</code>: an early version addressed NPCs who could not hear the player (the models' silence was correct), and the first "beer" check rejected the production model's habit of setting the beer on the counter in front of the customer. All runs were rescored offline after the fixes.</p>
+<p><img src="data:image/png;base64,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" alt="sample render of the bar" style="max-width:100%"></p>
+<p><em>The bar as the R4 image variant sees it (28×13 tiles, integer axes, labelled objects). Used only to test the image hypothesis; the recommendation is text.</em></p>
+<p><strong>Perception variants (same action space).</strong> R0 facts = the production text; R1 ascii = labelled grid plus legend; R2 graph = scene-graph JSON with zones, entities, relations and spots; R3 ego = R2 plus per-NPC egocentric lines; R4 image = rendered PNG with coordinates and labels plus minimal facts; R5 facts+spots = R0 plus one engine-computed line per NPC (distance band, service tile and steps, handover reach, fridge access tile and the id <code>take</code> yields, free chairs near the player, seats across the table).</p>
+<p><strong>Action-space variants (graph perception fixed).</strong> A0 = current DSL; A0v = A0 plus one verify-and-replan round with the engine's error as feedback; A1 = skills (<code>serve_at_counter</code>, <code>fetch_and_give</code>, <code>pass_object</code>, <code>come_to</code>, <code>sit_with</code>, <code>sit_at</code>, <code>clear_path_for</code>, <code>restrain</code>) expanded by the engine; A2 = engine-enumerated feasible candidates with ids, picked in free text; A2s = the same menu with a JSON-schema response whose enums are the ids; A3 = Jev chooses one candidate per NPC (one fan-out call), a cheap LLM writes only the spoken lines.</p>
+<p><strong>Subjects.</strong> Cheap: <code>openai/gpt-6-luna</code> ($0.10/M), <code>anthropic/claude-haiku-5.5</code> ($0.10/M), both with 2 seeds per case (90 trials per condition). Production: <code>openai/gpt-6-astra</code> (1 seed, 45 trials per condition). Mid-tier and vision checks: <code>anthropic/claude-sonnet-5.5</code>, <code>google/gemini-3.8-flash</code>. Judges for narration: <code>anthropic/claude-opus-5.5</code> on a subset.</p>
+<h2 id="5-alternative-pipelines-results-against-the-current-baseline">5. Alternative pipelines: results against the current baseline</h2>
+<p>All numbers are critical-pass rates on FSAB (45 cases). Cheap models: 2 seeds (n = 90 per cell). Production and mid-tier models: 1 seed (n = 45). Wilson 95% intervals are in <code>results/runs/*_rescored.jsonl</code> summaries (<code>python -m bench.stats</code>). "Baseline" is the production pipeline: facts dump (R0) + current DSL (A0).</p>
+<h3 id="51-does-the-representation-alone-help-current-action-space">5.1 Does the representation alone help? (current action space)</h3>
+<table>
+<thead>
+<tr>
+<th>Perception (A0 DSL)</th>
+<th>gpt-6-luna</th>
+<th>claude-haiku-5.5</th>
+<th>claude-sonnet-5.5</th>
+<th>gpt-6-astra (production)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R0 facts (baseline)</td>
+<td>0.63</td>
+<td>0.53</td>
+<td>0.71</td>
+<td>0.91</td>
+</tr>
+<tr>
+<td>R1 labelled ASCII grid</td>
+<td>0.53</td>
+<td>0.43</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>R2 scene-graph JSON</td>
+<td>0.52</td>
+<td>0.52</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>R3 graph + egocentric lines</td>
+<td>0.62</td>
+<td>0.51</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>R4 rendered image + minimal facts</td>
+<td>0.42</td>
+<td>0.43</td>
+<td>–</td>
+<td>– (gemini-3.8-flash: 0.71 vs 0.78 for its own R0)</td>
+</tr>
+<tr>
+<td>R5 facts + engine-computed spots</td>
+<td><strong>0.80</strong></td>
+<td>0.51</td>
+<td><strong>0.91</strong></td>
+<td>0.91</td>
+</tr>
+</tbody>
+</table>
+<p>Reading: the format by itself is not the lever. ASCII and images are worse for every model (consistent with SpatialEval, BALROG and SPACE). The scene-graph JSON is no better than the facts dump for cheap models. What helps is adding the five relations the models keep miscomputing (R5): +17 points for luna (paired on identical case/seed pairs: R5 better in 24, R0 better in 9, exact McNemar p = 0.014), +20 for sonnet (fetch-and-hand 0.00 → 0.83), nothing for haiku (12 vs 14, p = 0.85; its failures are format errors: it drops receiver names), nothing for astra (already 0.91; its residual failures are a restraint case and relay shouts beyond 12 tiles).</p>
+<h3 id="52-does-the-action-space-help-graph-perception-fixed">5.2 Does the action space help? (graph perception fixed)</h3>
+<table>
+<thead>
+<tr>
+<th>Action space (R2 graph)</th>
+<th>gpt-6-luna</th>
+<th>claude-haiku-5.5</th>
+<th>claude-sonnet-5.5</th>
+<th>gpt-6-astra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A0 current DSL</td>
+<td>0.52</td>
+<td>0.52</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>A0v DSL + one verify-and-replan round</td>
+<td>0.63</td>
+<td>0.56</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>A1 skills (engine expands)</td>
+<td>0.90</td>
+<td>0.79</td>
+<td>0.82</td>
+<td>–</td>
+</tr>
+<tr>
+<td>A2 engine menu, free-text pick</td>
+<td>0.91</td>
+<td>0.92</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>A2s engine menu + JSON-schema pick</td>
+<td><strong>0.91</strong></td>
+<td><strong>0.99</strong></td>
+<td>0.87 (1.00 with engine volume)</td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>A3 Jev picks per NPC, LLM writes lines</td>
+<td>0.90</td>
+<td>0.89</td>
+<td>–</td>
+<td>–</td>
+</tr>
+</tbody>
+</table>
+<p>Service staging, the production failure, goes from 0.05 (A0) to 0.85–1.00 (A2s) for cheap models; fetch-and-hand from 0.17–0.42 to 1.00; restraint and blocked-route cases from 0 to 1.00 for astra. Cost per call: luna $0.0002–0.0003 in every condition; astra $0.023 (baseline) vs $0.039 (A2s, larger prompt; pruning the dump recovers most of it). The Jev head costs $0.0002 and answers in 2–3 s against 4–6 s.</p>
+<p><strong>Cost and latency (per director call, OpenRouter-reported; A3 includes the Jev call and the line-writing call).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Perception</th>
+<th>Action space</th>
+<th>Input tokens/call</th>
+<th>$/call</th>
+<th>Latency (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude-haiku-5.5</td>
+<td>R0_facts</td>
+<td>A0</td>
+<td>3836</td>
+<td>0.0008</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>claude-haiku-5.5</td>
+<td>R2_graph</td>
+<td>A2s</td>
+<td>6529</td>
+<td>0.0009</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>claude-sonnet-5.5</td>
+<td>R0_facts</td>
+<td>A0</td>
+<td>3842</td>
+<td>0.0093</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>claude-sonnet-5.5</td>
+<td>R2_graph</td>
+<td>A2s</td>
+<td>6529</td>
+<td>0.0147</td>
+<td>2.9</td>
+</tr>
+<tr>
+<td>gemini-3.8-flash</td>
+<td>R0_facts</td>
+<td>A0</td>
+<td>2572</td>
+<td>0.0024</td>
+<td>3.8</td>
+</tr>
+<tr>
+<td>gemini-3.8-flash</td>
+<td>R2_graph</td>
+<td>A2s</td>
+<td>4349</td>
+<td>0.0038</td>
+<td>4.9</td>
+</tr>
+<tr>
+<td>gpt-6-astra</td>
+<td>R0_facts</td>
+<td>A0</td>
+<td>2481</td>
+<td>0.0234</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>gpt-6-astra</td>
+<td>R2_graph</td>
+<td>A2s</td>
+<td>3967</td>
+<td>0.0386</td>
+<td>4.3</td>
+</tr>
+<tr>
+<td>gpt-6-astra</td>
+<td>R5_facts_spots</td>
+<td>A0</td>
+<td>2811</td>
+<td>0.0264</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td>gpt-6-luna</td>
+<td>R0_facts</td>
+<td>A0</td>
+<td>2476</td>
+<td>0.0002</td>
+<td>4.2</td>
+</tr>
+<tr>
+<td>gpt-6-luna</td>
+<td>R2_graph</td>
+<td>A2s</td>
+<td>3967</td>
+<td>0.0003</td>
+<td>3.9</td>
+</tr>
+<tr>
+<td>gpt-6-luna</td>
+<td>R2_graph</td>
+<td>A3</td>
+<td>≈2.3k (Jev) + ≈0.4k (lines)</td>
+<td>0.0002</td>
+<td>3.2</td>
+</tr>
+<tr>
+<td>claude-haiku-5.5</td>
+<td>R2_graph</td>
+<td>A3</td>
+<td>≈2.3k (Jev) + ≈0.4k (lines)</td>
+<td>0.0002</td>
+<td>2.1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-dynamic-robustness-the-player-walks-while-the-model-plans">5.3 Dynamic robustness: the player walks while the model plans</h3>
+<p>Same cached model outputs; the player walks 2 or 4 random tiles between planning and execution ($0 to re-score).</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>luna, walk 2</th>
+<th>luna, walk 4</th>
+<th>haiku, walk 2</th>
+<th>haiku, walk 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A0 DSL (no walk: 0.52)</td>
+<td>0.38</td>
+<td>0.46</td>
+<td>0.38</td>
+<td>0.47</td>
+</tr>
+<tr>
+<td>A2s, static expansion (no walk: 0.91 / 0.99)</td>
+<td>0.44</td>
+<td>0.63</td>
+<td>0.52</td>
+<td>0.73</td>
+</tr>
+<tr>
+<td>A2s, late binding (re-plan at execution)</td>
+<td>0.77</td>
+<td>0.84</td>
+<td>0.84</td>
+<td>0.91</td>
+</tr>
+<tr>
+<td>A2s, late binding + engine-derived volume</td>
+<td>0.84</td>
+<td>0.89</td>
+<td>0.91</td>
+<td>0.96</td>
+</tr>
+<tr>
+<td>A1 skills (always late-bound) + engine volume</td>
+<td>0.86</td>
+<td>0.89</td>
+<td>0.73</td>
+<td>0.76</td>
+</tr>
+<tr>
+<td>A3 Jev head, static (no walk: 0.90 / 0.89)</td>
+<td>0.47</td>
+<td>0.68</td>
+<td>0.47</td>
+<td>0.64</td>
+</tr>
+<tr>
+<td>A3 Jev head, late binding</td>
+<td>0.81</td>
+<td>0.87</td>
+<td>0.80</td>
+<td>0.82</td>
+</tr>
+</tbody>
+</table>
+<p>The two engine-side rules (bind the skill when it starts; let the engine choose the quietest volume that reaches the listener) recover most of what movement destroys. No representation change does this; it is a controller property.</p>
+<h3 id="54-robustness-checks">5.4 Robustness checks</h3>
+<ul>
+<li><strong>Korean utterances</strong> (12 cases × 2 seeds, same geometry; the game ships Korean and Jev is weaker on CJK): baseline R0/A0 luna 0.67, haiku 0.54; A2s luna 0.92, haiku 1.00; A3 (Jev selection over the English engine menu with Korean events) luna 0.88, haiku 0.88. The pipeline is language-robust because the spatial decisions never depend on the utterance text once the candidates are engine-generated.</li>
+<li><strong>Menu size</strong> (A2s, candidates per NPC, 1 seed): 3 → luna 0.76 / haiku 0.84; 5 → 0.91 / 0.96; 8 → 0.91 / 1.00; 14 → 0.91 / 0.93. Too small a menu omits the right candidate; too large starts to confuse the smaller model. 5–8 per NPC is the working range, consistent with TITAN's "about five".</li>
+<li><strong>Narration vs state (judge: claude-opus-5.5, 12 records per condition, four yes/no questions):</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>judged / sampled</th>
+<th>comments describe only real effects</th>
+<th>no contradiction with final state</th>
+<th>sensible staging</th>
+<th>right target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gpt-6-luna · R2_graph · A0</td>
+<td>7 / 12</td>
+<td>0.57</td>
+<td>1.00</td>
+<td>0.71</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>gpt-6-luna · R2_graph · A2s</td>
+<td>12 / 12</td>
+<td>1.00</td>
+<td>0.92</td>
+<td>0.67</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td>claude-haiku-5.5 · R2_graph · A0</td>
+<td>9 / 12</td>
+<td>0.78</td>
+<td>0.78</td>
+<td>0.78</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>claude-haiku-5.5 · R2_graph · A2s</td>
+<td>12 / 12</td>
+<td>1.00</td>
+<td>1.00</td>
+<td>0.92</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>gpt-6-astra · R0_facts · A0</td>
+<td>6 / 12</td>
+<td>0.50</td>
+<td>0.83</td>
+<td>0.83</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>gpt-6-astra · R2_graph · A2s</td>
+<td>12 / 12</td>
+<td>1.00</td>
+<td>1.00</td>
+<td>1.00</td>
+<td>1.00</td>
+</tr>
+</tbody>
+</table>
+<p>Rates are over records the judge actually scored (Opus returned an empty answer for 11 of 72 records, all in the baseline conditions, so those cells are read with wider error). Under the menu pipeline every judged record had comments that only described real effects; under the current DSL between a fifth and a half of the judged narrations (luna 0.57, haiku 0.78, astra 0.50 on that question) claimed effects their instructions never performed, the "effects only in comments" failure the team saw with Fable. The judge rated the menu pipeline's staging as sensible in 0.67–1.00 of records; the lower luna figure reflects cases where the chosen candidate was feasible but socially odd (a bartender walking round the counter to stand beside the customer), which is a menu-design issue, not a validity one.
+- <strong>Production-model paired comparison</strong>: astra baseline 41/45 vs A2s 45/45 on identical cases; the four discordant pairs all favour A2s (exact McNemar p = 0.125). With the engine-derived volume rule the baseline rises to 42/45.</p>
+<h2 id="6-editable-scenes-and-an-online-world-representation-where-jev-fits">6. Editable scenes and an online world representation (where Jev fits)</h2>
+<p><strong>Principle.</strong> The engine owns the state and patches it per event; models never carry a map. Robotics keeps scene graphs current by editing the affected set after each interaction (DovSG, Lost &amp; Found, RoboEXP) rather than re-scanning; the LLM-as-state-keeper line (Statler, ByteSized32: GPT-4 predicts 60% of full post-action states) shows why the model must not own it.</p>
+<p><strong>Layers (prototyped in <code>bench/online_world.py</code>, <code>bench/chatter_sim.py</code>, <code>experiments/online_world_design.md</code>).</strong>
+1. <em>Ground truth</em> (exists): rows, actors, object registry with cells/owner/stock, holds, followers, history.
+2. <em>Derived scene graph</em> (new, engine): zones (staff aisle, customer floor, table groups), entities, spots (service tile per counter position, fridge/drink access tiles, seats per table, approach cells), relations (adjacent, across_counter, seated_at, holds, earshot band per pair, BFS reachability). Recomputed only for the entities an event touched. Scene edits are registry edits: <code>take(fridge)</code> creates <code>bar_fridge_1_beer_1</code> owned by Mara; <code>break(chair_3)</code> sets state=broken, removes the seat spot, invalidates any claim; a brawl is a list of such edits. Because the graph is a pure function of ground truth plus a cache, it can never drift.
+3. <em>Per-NPC perception</em> (new, code): each engine event (move, speech, take, place, sit, break, attack, idle) is filtered per NPC by hearing range and sight; the NPC's "belief" is what it perceived, with last-seen stamps. This is Unreal's AI Perception and Generative Agents' per-agent subgraph, and it makes the earshot rule structural: an unheard line is simply absent from that NPC's input.
+4. <em>Salience gate</em> (new, decision model): one Jev call per event with a fan-out of questions (one per NPC). Measured: on 16 hand-labelled bar events × 3 NPCs the yes/no primitive scored 44/48 (precision 0.88, recall 0.88) at 190 ms and $0.0001 per event; on a scripted 57-second walk (55 events) the 0–3 score primitive fired for Mara on exactly the seven "player at the counter" events (peak 2.16 while the player waits) and never for Garen or Nora (max 0.57), with a median of 0.47 elsewhere. Policy: fire the director when score ≥ 1.5, with a per-NPC refractory period; a glance/face-only reflex in 1.0–1.5; nothing below. Jev's documented weaknesses (counting, arithmetic, long distractor-laden state) are avoided by pre-computing tags in code ("player_at_counter_customer_side", "addressed_npcs: [Garen]") and keeping the state small.
+5. <em>Candidate enumeration and selection</em> (new): the same engine menu the director uses; Jev or the LLM selects; validity is by construction, and "menu omission" becomes the failure class to monitor.
+6. <em>Late binding and typed failures</em>: a chosen skill is re-planned when it starts; a failed op returns a typed reason that re-enters the gate instead of always re-calling the big model. In our dynamic test this recovered 25–40 points of pass rate (see §5).</p>
+<p><strong>Cost sketch.</strong> Event-driven gating at ~$0.0001 per event means an hour of continuous play with ~2 events per second costs about $0.7 in Jev calls before any director call; event filtering in code (ignore ordinary walking that changes no engine tag) cuts this several-fold. A director call on astra costs $0.023–0.039 today; with pruned prompts and a Jev-only fast path for routine beats, most reactions never reach the LLM.</p>
+<h2 id="7-recommended-architecture-and-exact-prompt-text">7. Recommended architecture and exact prompt text</h2>
+<p><strong>The stack, in robotics terms.</strong> Sensor (engine) → state estimator (derived scene graph, per-NPC beliefs) → affordance layer (engine-enumerated candidates with slots) → high-level policy (LLM for speech and intent, or Jev for selection) → low-level controller (BFS executor with late binding) → closed loop (typed failures, salience gate). The LLM never emits coordinates; the engine never guesses intent.</p>
+<p><strong>Migration path that keeps the current code.</strong>
+1. Add the one-line-per-NPC "Engine-computed spatial facts" block to <code>SceneContext.describe</code> (R5). Zero risk; +18 points on luna, +20 on sonnet, +0 to +2 on astra and haiku. Drop the wall runs and the per-NPC neighbour lines once skills exist.
+2. Add skills (A1) to <code>SceneProgram</code> as macro-ops expanded by the engine at execution time (late binding) and keep the primitive ops for backward compatibility.
+3. Add the engine menu plus JSON-schema selection (A2s) as the default director mode on OpenRouter endpoints that support <code>response_format</code> (astra and the Claude family do); keep free-text DSL as the fallback.
+4. Make <code>say</code> volume engine-derived (escalate to the smallest range that reaches the listener, or insert an approach); this alone removes the largest dynamic failure class.
+5. Add the Jev salience gate and the Jev selection head for routine beats; call the LLM only for speech and non-routine intent.</p>
+<p><strong>Exact text to add to <code>prompts/map.txt</code> (proposal; the repo is untouched).</strong> Replace the <code>step(...)</code> and <code>move(...)</code> contract lines with:</p>
+<pre><code>Skills (macro-actions). The engine plans exact tiles and expands each skill when it starts executing; you emit the intent only:
+serve_at_counter(&quot;player&quot;): walk along the staff aisle to the counter tile directly across from the player and face them.
+fetch_and_give(&quot;beer&quot;,&quot;player&quot;|&quot;&lt;NPC&gt;&quot;): go to the fridge, take one beer, return to a handover position (across the counter or adjacent) and give it.
+pass_object(&quot;&lt;object_id&gt;&quot;,&quot;player&quot;|&quot;&lt;NPC&gt;&quot;): go next to a loose object, take it, bring it within handover reach and give it.
+come_to(&quot;player&quot;|&quot;&lt;NPC&gt;&quot;,range): walk to within range (1–3) tiles of that character, replanning if they move.
+sit_with(&quot;player&quot;|&quot;&lt;NPC&gt;&quot;): take a free chair at that character's table, preferring the seat across from them.
+sit_at(&quot;&lt;chair_id&gt;&quot;): walk to that chair and sit.
+clear_path_for(&quot;&lt;NPC&gt;&quot;): step aside off the route that NPC needs.
+restrain(&quot;player&quot;|&quot;&lt;NPC&gt;&quot;): close to adjacent contact, then hold.
+Do not emit move/step/approach/take/give/place/sit/hold yourself; use skills. say/gesture/face/wait/stand/follow/stop_follow are unchanged. say no longer needs a volume: the engine speaks at the quietest level that reaches the listener.
+</code></pre>
+<p><strong>Exact text the engine appends to the user message (R5, one line per NPC; generated, not authored):</strong></p>
+<pre><code>Engine-computed spatial facts (authoritative; use these instead of computing geometry):
+&lt;NPC&gt;: distance to player &lt;d&gt; (&lt;whisper|ordinary|shout|none&gt; range); counter service tile opposite the player: (&lt;x&gt;,&lt;y&gt;) (&lt;n&gt; steps away | already there | unreachable); path to stand next to the player: &lt;n&gt; steps | already adjacent | blocked; within handover reach of the player now | NOT within handover reach (must be adjacent or directly across one counter cell); to take from &lt;fridge_id&gt; stand at (&lt;x&gt;,&lt;y&gt;) then take(&quot;&lt;fridge_id&gt;&quot;) which yields &lt;next_beer_id&gt;; free chairs near the player: &lt;chair_id&gt; (&lt;x&gt;,&lt;y&gt;), ...
+Player sits on &lt;chair_id&gt; at &lt;table_id&gt;; chairs at that table: &lt;chair_id&gt; (free, directly across the table from the player); &lt;chair_id&gt; (occupied by &lt;name&gt;); ...
+</code></pre>
+<p><strong>Menu mode (A2s): engine-generated candidate list appended to the user message, with a structured-output schema whose enums are the ids:</strong></p>
+<pre><code>Candidate actions (engine-verified feasible right now; pick by id):
+&lt;NPC&gt; (at (x,y), player distance d: &lt;range&gt;):
+  &lt;ID&gt;: &lt;NPC&gt;.&lt;skill&gt;(&lt;args&gt;) — &lt;plain description&gt; → ends at (x,y)
+  ...
+  &lt;N0&gt;: &lt;NPC&gt; stays where they are (speech/gesture only)
+Respond with a JSON object only: {&quot;actions&quot;:[{&quot;npc&quot;:&quot;&lt;NPC&gt;&quot;,&quot;candidate&quot;:&quot;&lt;id&gt;&quot;}], &quot;lines&quot;:[{&quot;npc&quot;:&quot;&lt;NPC&gt;&quot;,&quot;listener&quot;:&quot;player&quot;|&quot;&lt;NPC&gt;&quot;,&quot;text&quot;:&quot;&lt;1-120 chars&gt;&quot;}], &quot;narration&quot;:&quot;&lt;one sentence&gt;&quot;}
+</code></pre>
+<p>Schema (<code>response_format.json_schema</code>, strict): <code>actions[].npc</code> and <code>lines[].npc</code> enum = NPC names in the room; <code>actions[].candidate</code> enum = candidate ids plus the per-NPC "stay" id; <code>lines[].listener</code> enum = NPCs + "player"; <code>additionalProperties:false</code> everywhere.</p>
+<h2 id="8-risks-open-questions-next-steps">8. Risks, open questions, next steps</h2>
+<ul>
+<li><strong>Menu omission is the new failure class.</strong> When the engine fails to offer the right candidate (an unusual request), the model can only talk. Keep free-text skills as an escape hatch and log every "stay + speech" answer to a refusal/omission review queue.</li>
+<li><strong>Dialogue quality under JSON.</strong> The format-tax literature says short structured answers cost little on current closed models, but NPC lines inside JSON strings are unmeasured at scale; the judge pass in §5 is a first check. A/B it in play.</li>
+<li><strong>Dynamic validity is not solved by any representation.</strong> Late binding and engine-derived volume recover most of it; <code>scene.guard</code> and continuation budgets remain necessary. A true fix is to make every spatial op dynamic (target-relative) in the engine.</li>
+<li><strong>Campaign rooms.</strong> The port's campaign description is partial (no quests/jobs); campaign-navigation cases behaved like sandbox cases, but the full campaign prompt is longer and should be re-tested with pruning.</li>
+<li><strong>Jev calibration.</strong> The absolute yes/no threshold was wrong (0.6) and the score primitive right; thresholds need a labelled log per world, and Korean state should be checked separately (Jev is weaker on CJK; our Korean subset results are in §5).</li>
+<li><strong>Learned pipeline.</strong> With engine-validated frontier programs as data, a small selection model could replace the LLM for selection; the RunPod budget was not used because the Jev head already reaches 89–90% at $0.0002 per call, so the marginal value of training is low until menus and gating are in production.</li>
+<li><strong>Next steps (in order).</strong> Ship R5 facts; ship engine-derived volume; implement skills with late binding; add the menu + schema mode for astra; add the Jev gate and head; extend FSAB with world-event and campaign cases from production logs and run it in CI on every prompt change.</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<p><strong>A. Literature lanes (files in <code>lit/</code>, each with a reference list, [H]/[M]/[L] confidence tags, written by research agents from sources they opened; citation verification agents could not complete because of session limits, so treat [M]/[L] items as unverified).</strong> <code>vla_action_spaces.md</code> (RT-1/RT-2, OpenVLA, pi0/pi0.5, ACT, FAST, ActionPiece, hierarchical VLAs), <code>scene_graphs.md</code> (SayPlan, ConceptGraphs, Hydra, RoboEXP, ChronoGraph, DovSG, MoMa-LLM, OVSG, Taskography, Statler, LLM+P), <code>llm_spatial_reasoning.md</code> (SpatialEval, BALROG, SPACE, GRASP, TopoBench, Martorell 2025, GSU, VoT, Set-of-Mark, SCAFFOLD, AlphaMaze), <code>game_embodied_agents.md</code> (Voyager, Generative Agents, ALFWorld, NetPlay, Orak, Cradle, HLA, Lyfe, Affordable GA, Orchestrated Reality), <code>affordance_grounding.md</code> (SayCan, Grounded Decoding, ProgPrompt, LLM-Modulo, Jericho, Tree-Planner, Unreal Smart Objects, TITAN), <code>classic_game_ai.md</code> (The Sims, Smart Objects, Behavior Objects, Smart Zones/Locations, Halo 2, F.E.A.R. GOAP, EQS, Radiant AI, RimWorld jobs, L4D director, Convai), <code>online_world_state.md</code> (SymbolicToM, Belief-State Engine, ByteSized32, Khronos, Lost &amp; Found, DoReMi, SwiftSage, event-triggered invocation), <code>structured_outputs_tool_calling.md</code> (Outlines/XGrammar, OpenAI/Anthropic/Gemini/OpenRouter structured outputs, ToolDec, Action-Space Shaping, format-tax studies), <code>vlm_game_frames.md</code> (Gemini/Claude Plays Pokémon, PokeAgent, BALROG/SpatialEval/SPACE/Orak image ablations, SCAFFOLD, SeeAct), <code>self_gathered_notes.md</code> (Pokémon harness write-ups and the Forbus &amp; Wright Sims paper, opened by me). Lanes not completed: benchmarks/metrics, learned-policy distillation, spatial-language cognitive science, industry LLM-NPC survey.</p>
+<p><strong>B. Reproduction.</strong> <code>source .venv/bin/activate</code>; <code>python fixion_sim/tests/test_port.py</code> (37 checks incl. the golden diff); <code>python -m bench.cases</code> (prints the 45 cases and who can hear each utterance); <code>python -m bench.harness --models openai/gpt-6-luna --reps R0_facts,R5_facts_spots --actions A0,A2s --n 1 --tag demo</code>; <code>python -m bench.rescore results/runs/demo.jsonl</code>; <code>python -m bench.stats results/runs/demo_rescored.jsonl --paired action_space:A2s:A0</code>; <code>python bench/online_world.py</code>; <code>python bench/chatter_sim.py</code>; <code>python bench/replay_log.py</code> (production log replay). Raw calls with costs: <code>results/calls.jsonl</code>. Experiment scripts: <code>experiments/run_*.sh</code>. Work log: <code>LOG.md</code>.</p>
+<p><strong>C. Key artefacts.</strong> <code>fixion_sim/</code> (Python port of the spatial core), <code>bench/</code> (benchmark, representations, skills, menus, Jev head, judge, stats), <code>results/runs/</code> (every trial), <code>results/judge/</code>, <code>experiments/</code> (plans, design notes, report fragments), <code>lit/</code> (literature), <code>log_samples/</code> (production prompt samples), <code>X_REQUESTS.md</code> / <code>x_findings.md</code> (X searches run by the Grok Bot; low signal, used only for the Jev demos pointers).</p></body></html>
