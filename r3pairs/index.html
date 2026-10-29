@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixion blind pairs, round 3</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#111;color:#eee}
+header{position:sticky;top:0;background:#1b1b1b;padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:2;border-bottom:1px solid #333;flex-wrap:wrap}
+header b{font-size:17px}#prog{opacity:.7}
+button{font-size:16px;padding:8px 14px;border-radius:8px;border:1px solid #555;background:#2a2a2a;color:#eee;cursor:pointer}
+button.on{background:#3b6cff;border-color:#3b6cff}
+main{max-width:1000px;margin:auto;padding:12px}
+img{width:100%;border-radius:6px;display:block;cursor:zoom-in}
+.row{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;align-items:center}
+textarea{width:100%;box-sizing:border-box;font-size:16px;min-height:60px;background:#1e1e1e;color:#eee;border:1px solid #444;border-radius:8px;padding:8px}
+.nav{display:flex;justify-content:space-between;margin:14px 0 40px}
+#dots span{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#333;margin:2px;font-size:12px;cursor:pointer}
+#dots span.done{background:#2e7d32}#dots span.cur{outline:2px solid #3b6cff}
+#out{white-space:pre-wrap;background:#1e1e1e;padding:10px;border-radius:8px;display:none}
+</style></head><body>
+<header><b id="title"></b><span id="prog"></span><span id="dots"></span><button id="copy">Copy all answers</button></header>
+<main>
+<p style="opacity:.75">Each image shows two Fixion starting scenes, A and B (map render on top, opening below). Pick one, say why in a few words, and how strongly: 1 = coin flip, 5 = no contest. Answers save in this browser automatically. Tap the image to open it full size.</p>
+<a id="full" target="_blank"><img id="img"></a>
+<div class="row"><span>Prefer:</span><button data-ch="A">A</button><button data-ch="B">B</button></div>
+<div class="row"><span>Strength:</span><button data-s="1">1</button><button data-s="2">2</button><button data-s="3">3</button><button data-s="4">4</button><button data-s="5">5</button></div>
+<textarea id="why" placeholder="Why? (a few words)"></textarea>
+<div class="nav"><button id="prev">← Prev</button><button id="next">Next →</button></div>
+<div id="out"></div>
+</main>
+<script>
+const N=12,K='fixion_r3pairs';let a=JSON.parse(localStorage.getItem(K)||'{}'),i=+(location.hash.slice(1)||1);
+const pad=n=>String(n).padStart(2,'0');
+function save(){localStorage.setItem(K,JSON.stringify(a))}
+function done(n){const x=a[n];return x&&x.ch&&x.s}
+function render(){const id='pair_'+pad(i),x=a[i]||{};
+title.textContent=id;img.src=id+'.png';full.href=id+'.png';why.value=x.why||'';
+document.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('on',b.dataset.ch==x.ch));
+document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==x.s));
+let d=0;dots.innerHTML='';for(let n=1;n<=N;n++){const s=document.createElement('span');s.textContent=n;if(done(n)){s.className='done';d++}if(n==i)s.classList.add('cur');s.onclick=()=>go(n);dots.appendChild(s)}
+prog.textContent=d+'/'+N+' done';prev.disabled=i==1;next.textContent=i==N?'Finish':'Next →';location.hash=i;window.scrollTo(0,0)}
+function go(n){i=Math.max(1,Math.min(N,n));render()}
+function set(k,v){a[i]=a[i]||{};a[i][k]=v;save();render()}
+document.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>set('ch',b.dataset.ch));
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>set('s',b.dataset.s));
+why.oninput=()=>{a[i]=a[i]||{};a[i].why=why.value;save()};
+prev.onclick=()=>go(i-1);next.onclick=()=>{if(i==N)copy.onclick();else go(i+1)};
+copy.onclick=()=>{let t='Round 3 blind pairs, my answers:\n';for(let n=1;n<=N;n++){const x=a[n]||{};t+=`pair_${pad(n)}: ${x.ch||'?'}, strength ${x.s||'?'}, why: ${(x.why||'').replace(/\n/g,' ')}\n`}
+out.textContent=t;out.style.display='block';navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>{copy.textContent='Copied! Paste in chat'},()=>{});out.scrollIntoView()};
+render();
+</script></body></html>
