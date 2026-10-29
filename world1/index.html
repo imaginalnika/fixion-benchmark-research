@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Fixion world1 — portal explorer v2 (temp)</title>
+<style>
+:root{--bg:#0f1115;--panel:#1a1d24;--ink:#e8e6e3;--mut:#9aa3b2;--acc:#6ea8fe;--door:#e6b35a;--edge:#7db7ff;--down:#c792ea;--up:#7dcea0;--bad:#ff8a80;--ok:#9be29b}
+*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#14161c;border-bottom:1px solid #2a2f3a;position:sticky;top:0;z-index:5}
+header b{font-size:15px}header select,header button{background:#222733;color:var(--ink);border:1px solid #3a4150;border-radius:8px;padding:6px 10px;cursor:pointer}
+header a{color:var(--acc);font-size:13px}
+main{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;padding:14px;max-width:1240px;margin:0 auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid #2a2f3a;border-radius:12px;padding:12px}
+img.map{width:100%;border-radius:8px;background:#000;min-height:200px;object-fit:contain}
+.mut{color:var(--mut);font-size:13px}
+h1{font-size:20px;margin:0 0 6px}h2{font-size:14px;margin:14px 0 8px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+pre{white-space:pre-wrap;font-family:ui-serif,Georgia,serif;font-size:14px;line-height:1.45;max-height:48vh;overflow:auto;margin:0}
+.ports{display:flex;flex-direction:column;gap:8px}
+.ports button{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid #3a4150;background:#222733;color:var(--ink);cursor:pointer}
+.ports button:hover{border-color:var(--acc)}
+.tag{display:inline-block;font-size:11px;padding:2px 6px;border-radius:999px;margin-right:6px;background:#2a3140}
+.tag.edge{background:#1e3a5f;color:var(--edge)}.tag.door{background:#4a3a1a;color:var(--door)}
+.tag.descent{background:#3a1f4a;color:var(--down)}.tag.climb{background:#1f3a2a;color:var(--up)}.tag.return{background:#333}
+.crumb{font-size:13px;color:var(--mut)}.crumb a{color:var(--acc);cursor:pointer;text-decoration:none}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.pair{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px;max-width:1240px;margin:0 auto}
+@media(max-width:900px){.pair{grid-template-columns:1fr}}
+.act{max-width:1240px;margin:0 auto;padding:0 14px}
+.act .card{margin-top:14px}
+table{border-collapse:collapse;font-size:13px}td,th{border:1px solid #2a2f3a;padding:4px 8px;text-align:left}
+footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid #2a2f3a;margin-top:20px}
+</style></head><body>
+<header>
+  <b>Fixion world1 explorer · v2</b>
+  <label class="mut">Start scene <select id="world"></select></label>
+  <button id="refreshBtn">Refresh demo (player action → unopened portal)</button>
+  <span id="crumb" class="crumb"></span>
+  <span class="mut" id="meta"></span>
+  <span style="flex:1"></span>
+  <a href="GRAPH.png">graph</a><a href="CONTACT_SHEET.png">contact sheet</a><a href="NOTES.md">notes</a><a href="PROMPTS.md">prompts</a>
+  <a href="v1/">old version (v1)</a>
+</header>
+<div id="explore">
+<main>
+  <section class="card">
+    <h1 id="title">—</h1>
+    <div class="mut" id="label"></div>
+    <p class="mut" id="set"></p>
+    <img class="map" id="img" alt="map render"/>
+  </section>
+  <section class="card">
+    <h2>Portals</h2>
+    <div class="ports" id="ports"></div>
+    <h2>How this map was made</h2>
+    <div class="mut" id="how"></div>
+    <h2>Opening</h2>
+    <pre id="opening"></pre>
+  </section>
+</main>
+</div>
+<div id="refresh" style="display:none">
+  <div class="act"><div class="card">
+    <h1>Refresh: what is behind the gravestone, before and after a player line</h1>
+    <p class="mut">Field of Morrows → descent at the gravestone. The crypt is generated ahead of time (BEFORE). A player line
+    is then spoken in the field; the still-unopened destination is regenerated with that line on the episode trail (AFTER).
+    Same parent, portal and prompt documents; AFTER is the best of 3 samples by Jev. The only difference is the player line (speech, or a deed written as the game's narrator would). Jev scores (neutral ids) how clearly each map shows the consequence of each line.</p>
+    <div id="reftable"></div>
+  </div></div>
+  <div class="pair" id="pair"></div>
+</div>
+<footer>Temporary research page: portal-connected maps grown from the four hand-authored Fixion scenes. Not shipped. Delete after review. <span id="judge"></span></footer>
+<script src="data.js"></script>
+<script>
+const D = WORLD1, W = D.worlds;
+const sel = document.getElementById('world');
+let worldId = Object.keys(W)[0], mapId = W[worldId].start;
+for (const id of Object.keys(W)) { const o = document.createElement('option'); o.value = id; o.textContent = W[id].title; sel.appendChild(o); }
+sel.onchange = () => { worldId = sel.value; mapId = W[worldId].start; show('explore'); render(); };
+document.getElementById('refreshBtn').onclick = () => { show('refresh'); history.replaceState(null, '', '#refresh'); };
+function show(which){ document.getElementById('explore').style.display = which==='explore'?'':'none'; document.getElementById('refresh').style.display = which==='refresh'?'':'none'; }
+function go(id){ mapId = id; show('explore'); render(); }
+window.go = go;
+function esc(s){ return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function render(){
+  const world = W[worldId]; let m = world.maps[mapId];
+  if(!m){ mapId = world.start; m = world.maps[mapId]; }
+  document.getElementById('title').textContent = m.title;
+  document.getElementById('label').textContent = (m.look ? ('look: ' + m.look + ' · ') : '') + (m.label || '');
+  document.getElementById('set').textContent = m.set_line || '';
+  document.getElementById('img').src = m.image;
+  document.getElementById('opening').textContent = m.opening || '(no opening text)';
+  document.getElementById('meta').textContent = m.hand ? 'hand-authored start' : ('generated · depth ' + m.depth + ' · parent ' + (m.parent || '?'));
+  const how = document.getElementById('how');
+  if (m.hand) how.textContent = 'Hand-authored start scene (unchanged).';
+  else {
+    const g = m.gate || {};
+    how.innerHTML = 'Trail: ' + esc((m.trail||[]).join(' → ')) + ' → <b>' + esc(m.title) + '</b><br>'
+      + 'Scene heading written by the base model: <code>' + esc(m.heading) + '</code><br>'
+      + 'Candidates: ' + esc((m.heading_candidates||[]).join(' | ')) + '<br>'
+      + 'Gate (world-scoped): <span class="' + (g.ok?'ok':'bad') + '">' + (g.ok?'pass':'fail ' + esc((g.reasons||[]).join(', '))) + '</span>'
+      + ' · place match ' + (g.place_match ?? '?') + ' · own-world names ' + esc((g.own||[]).join(', ') || 'none')
+      + ' · old v1 gate would say <span class="' + (g.v1_ok?'ok':'bad') + '">' + (g.v1_ok?'pass':'fail') + '</span><br>'
+      + 'Build: ' + (m.wall ? m.wall.toFixed(1) + ' s' : '?') + ' · $' + (m.usd ? m.usd.toFixed(4) : '?') + ' (LLM, excl. sprite forging) · attempts ' + (m.attempts || 1);
+  }
+  const crumb = document.getElementById('crumb'); crumb.innerHTML = '';
+  const a = document.createElement('a'); a.textContent = world.title; a.onclick = () => go(world.start); crumb.appendChild(a);
+  if (mapId !== world.start) {
+    if (m.parent && m.parent !== world.start) { crumb.appendChild(document.createTextNode(' / ')); const p = document.createElement('a'); p.textContent = world.maps[m.parent].title; p.onclick = () => go(m.parent); crumb.appendChild(p); }
+    crumb.appendChild(document.createTextNode(' / ')); const b = document.createElement('b'); b.textContent = m.title; crumb.appendChild(b);
+  }
+  const ports = document.getElementById('ports'); ports.innerHTML = '';
+  (m.portals || []).forEach(p => {
+    const btn = document.createElement('button');
+    const tag = document.createElement('span'); tag.className = 'tag ' + p.kind; tag.textContent = p.kind;
+    btn.appendChild(tag); btn.appendChild(document.createTextNode(' ' + p.label));
+    btn.onclick = () => go(p.to); ports.appendChild(btn);
+  });
+  if (!(m.portals || []).length) ports.innerHTML = '<div class="mut">No portals from here.</div>';
+  history.replaceState(null, '', '#' + worldId + '/' + mapId);
+}
+function renderRefresh(){
+  const R = D.refresh, ids = Object.keys(R.maps), acts = Object.keys(R.actions);
+  let t = '<table><tr><th>map</th><th>title</th>' + acts.map(k => '<th>shows line “' + esc(k) + '”</th>').join('') + '</tr>';
+  for (const id of ids) t += '<tr><td>' + esc(id) + '</td><td>' + esc(R.maps[id].title) + '</td>' + acts.map(k => '<td>' + (R.reflects[id + '__' + k] ?? 0).toFixed(2) + '</td>').join('') + '</tr>';
+  t += '</table><p class="mut">' + acts.map(k => '<b>' + esc(k) + '</b>: ' + esc(R.actions[k])).join('<br>') + '</p>';
+  document.getElementById('reftable').innerHTML = t;
+  document.getElementById('pair').innerHTML = ids.map(id => {
+    const m = R.maps[id], k = id.replace('morrows_crypt_after_', '');
+    const label = id.endsWith('before') ? 'BEFORE: no player line' : 'AFTER: ' + esc(R.actions[k] || '');
+    return '<section class="card"><div class="mut">' + label + '</div><h1>' + esc(m.title) + '</h1><div class="mut">heading <code>' + esc(m.heading) + '</code></div>'
+      + '<p class="mut">' + esc(m.set_line) + '</p><img class="map" src="' + m.image + '"/><h2>Opening</h2><pre>' + esc(m.opening) + '</pre></section>';
+  }).join('');
+}
+renderRefresh();
+if (D.judge) { const j = D.judge.per_criterion_per_map.overall || {}; document.getElementById('judge').textContent = ' · Blind A/B (Opus 5.5 subagents, both orders) v2 vs v1 overall: v2 ' + (j.v2||0) + ' / v1 ' + (j.v1||0) + ' / split ' + (j.split||0) + ' of ' + D.judge.n_maps + ' maps.'; }
+const hash = location.hash.slice(1).split('/');
+if (hash[0] === 'refresh') { show('refresh'); }
+else if (hash[0] && W[hash[0]]) { worldId = hash[0]; sel.value = worldId; if (hash[1] && W[worldId].maps[hash[1]]) mapId = hash[1]; }
+render();
+if (hash[0] === 'refresh') show('refresh');
+</script>
+</body></html>
