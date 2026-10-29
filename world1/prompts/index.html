@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixion world1 v2 — prompts for approval</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e6e6e6; --muted:#9aa0a6; --card:#1a1d24; --accent:#7cb3ff; --new:#6bcb77; --changed:#f0c14b; --prebg:#0a0c10; --border:#2a2f3a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:28px 24px 12px; max-width:1100px; margin:0 auto; }
+  h1 { font-size:1.6rem; margin:0 0 8px; }
+  .sub { color:var(--muted); max-width:70ch; }
+  nav.toc { max-width:1100px; margin:0 auto 24px; padding:0 24px; }
+  nav.toc ol { padding-left:1.2em; }
+  nav.toc a { color:var(--accent); text-decoration:none; }
+  nav.toc a:hover { text-decoration:underline; }
+  .flag { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:4px; vertical-align:middle; margin-right:6px; }
+  .flag.new { background:rgba(107,203,119,.18); color:var(--new); }
+  .flag.changed { background:rgba(240,193,75,.18); color:var(--changed); }
+  main { max-width:1100px; margin:0 auto; padding:0 24px 64px; }
+  section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin:18px 0; }
+  section h2 { margin:0 0 8px; font-size:1.15rem; }
+  .meta { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .blurb { margin:0 0 14px; }
+  h3 { font-size:.95rem; margin:18px 0 8px; color:var(--accent); font-weight:600; }
+  pre { background:var(--prebg); border:1px solid var(--border); border-radius:8px; padding:14px 16px; overflow:auto; white-space:pre; font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#d7dbe0; }
+  .cols { display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:960px) {
+    .cols.side { grid-template-columns:1fr 1fr; }
+  }
+  .note { color:var(--muted); font-size:13px; margin-top:28px; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Fixion world1 quality pass v2 — prompts for approval</h1>
+  <p class="sub">Byte-exact templates and one complete rendered example each. Temporary page (delete after review). Source: <code>world1/PROMPTS.md</code> § Quality pass v2 and <code>round3/prompts/world1/v2/</code>.</p>
+</header>
+<nav class="toc">
+  <strong>Table of contents</strong>
+  <ol>
+    <li><span class="flag new">NEW</span><a href="#beat">Portal-step △ templates (BEAT)</a></li>
+    <li><span class="flag new">NEW</span><a href="#heading-doc">Episode-trail heading document</a></li>
+    <li><span class="flag new">NEW</span><a href="#jev-pick">Jev heading-pick question (JEV_PICK)</a></li>
+    <li><span class="flag new">NEW</span><a href="#jev-place">Jev is-it-a-place question (JEV_PLACE)</a></li>
+    <li><span class="flag new">NEW</span><a href="#laundromat">Laundromat Exits few-shot (EXTRA_EX2)</a></li>
+    <li><span class="flag new">NEW</span><a href="#refresh">Refresh player lines and Jev check</a></li>
+    <li><span class="flag new">NEW</span><a href="#judge">A/B judge rubric and subagent prompt</a></li>
+    <li><span class="flag changed">CHANGED</span><a href="#tale">Tale = continuation of the episode (was a fresh &quot;Episode 1&quot;)</a></li>
+    <li><span class="flag changed">CHANGED</span><a href="#bios">Bios trail lines + pre-filled party bios (replaces &quot;[Came from…]&quot; bracket)</a></li>
+    <li><span class="flag changed">CHANGED</span><a href="#shots">Genre-pool few-shots pinned per world (WORLD_SHOTS)</a></li>
+  </ol>
+</nav>
+<main>
+<section id="beat">
+  <h2><span class="flag new">NEW</span>Portal-step △ templates (BEAT)</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron base via Tinker (filled into the heading/bios/tale documents; not sent alone)</p>
+  <p class="blurb">One △ line per portal kind (door / descent / climb / edge), filled with the player name and the portal feature. Depth 2 appends &quot;, toward {induced destination}&quot;.</p>
+  <h3>Template (from expand_v2.BEAT)</h3>
+  <pre>{
+ "door": "{who} opens {f} and steps through.",
+ "descent": "{who} finds a way down at {f} and climbs down into what lies below.",
+ "climb": "{who} climbs out by {f} and up.",
+ "edge": "{who} leaves by {f} and keeps going."
+}</pre>
+  <h3>Rendered example (inside the heading document for morrows_crypt_after_oil_s0 — the oil deed + descent beat near the end)</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/morrows/morrows_crypt_after_oil_s0/heading
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Field of Morrows
+
+△ High fantasy isekai.
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world
+
+CHARACTERS
+
+ZANKARIS — a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little
+
+VELLICHOR — Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  EXT.  FIELD OF MORROWS
+
+CHARACTERS: Zankaris, Vellichor
+
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world.
+△ Zankaris, a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little, in front of the gravestone.
+△ Vellichor, Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy, beside Zankaris.
+△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.
+△ The adventurer finds a way down at the gravestone and climbs down into what lies below.
+
+2.  INT. </pre>
+</section>
+<section id="heading-doc">
+  <h2><span class="flag new">NEW</span>Episode-trail heading document</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron-3-Ultra base via Tinker (tag …/heading)</p>
+  <p class="blurb">Few-shot genre examples + this world&#x27;s bios + a tale whose scenes are the trail so far, then the player line (refresh only), the portal-step beat, and a prefilled next heading &quot;N.  INT. &quot; / &quot;N.  EXT. &quot; for the model to complete.</p>
+  <h3>Scene-block template (code)</h3>
+  <pre>f"{i}.  {sc['ie']}  {sc['place_head']}\n\nCHARACTERS: {', '.join(sc['cast']) or 'none'}\n\n"
++ ''.join(f"△ {b.rstrip('.')}.\n" for b in sc['beats'] if b)</pre>
+  <h3>IE rule</h3>
+  <pre>descent → INT.; climb/edge → EXT.; door into → INT.; other doors flip the previous scene's INT./EXT.</pre>
+  <h3>Complete rendered example: prompts/world1/v2/morrows/morrows_crypt_after_oil_s0/heading/ac45796ee5b4.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/morrows/morrows_crypt_after_oil_s0/heading
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Field of Morrows
+
+△ High fantasy isekai.
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world
+
+CHARACTERS
+
+ZANKARIS — a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little
+
+VELLICHOR — Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  EXT.  FIELD OF MORROWS
+
+CHARACTERS: Zankaris, Vellichor
+
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world.
+△ Zankaris, a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little, in front of the gravestone.
+△ Vellichor, Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy, beside Zankaris.
+△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.
+△ The adventurer finds a way down at the gravestone and climbs down into what lies below.
+
+2.  INT. </pre>
+</section>
+<section id="jev-pick">
+  <h2><span class="flag new">NEW</span>Jev heading-pick question (JEV_PICK)</h2>
+  <p class="meta"><strong>Model:</strong> Jev (type choice over candidate headings)</p>
+  <p class="blurb">After Nemotron samples up to 7 headings and filters empties / already-seen / portal-name-only / not-a-place, Jev picks the most plausible specific new place among the rest.</p>
+  <h3>Template (expand_v2.JEV_PICK)</h3>
+  <pre>The player was in {prev}. {beat} Earlier player line: {action}. Which of these scene headings names the most plausible and specific NEW place for them to arrive in next, through that exact way (a stair down leads somewhere below, a door leads in or out, a climb leads up, an edge leads further on), and fits the player line if there is one?</pre>
+  <h3>Complete rendered example: prompts/world1/v2/louis/louis_street_deeper/heading/pick/837c180a6335.txt</h3>
+  <pre># api=jev model=jev-1.14.0 tag=world1/v2/louis/louis_street_deeper/heading/pick
+# ---- full prompt below this line ----
+{
+ "state": {
+  "previous": "Courtyard",
+  "portal": "주만 opens through the 별채 door and steps through, toward the 별채.",
+  "candidates": {
+   "h0": "예당저수지",
+   "h1": "Han River",
+   "h2": "Rooftop",
+   "h3": "Street"
+  }
+ },
+ "questions": {
+  "h": {
+   "type": "choice",
+   "criteria": {
+    "h0": "예당저수지",
+    "h1": "Han River",
+    "h2": "Rooftop",
+    "h3": "Street"
+   },
+   "instructions": "The player was in Courtyard (The courtyard between the main house and the 별채). 주만 opens through the 별채 door and steps through, toward the 별채. Earlier player line: none. Which of these scene headings names the most plausible and specific NEW place for them to arrive in next, through that exact way (a stair down leads somewhere below, a door leads in or out, a climb leads up, an edge leads further on), and fits the player line if there is one?"
+  }
+ }
+}</pre>
+</section>
+<section id="jev-place">
+  <h2><span class="flag new">NEW</span>Jev is-it-a-place question (JEV_PLACE)</h2>
+  <p class="meta"><strong>Model:</strong> Jev (noul; keep if ≥ 0.5)</p>
+  <p class="blurb">Per surviving candidate heading: does it name a place someone could stand in, or only a time/weather/person/event/feeling?</p>
+  <h3>Template (expand_v2.JEV_PLACE)</h3>
+  <pre>Does the scene heading "{t}" name a place someone could stand in (a room, building, street, cave, forest, rooftop...)? Answer no if it names only a time, weather, a person, an event or a feeling.</pre>
+  <h3>Complete rendered example: prompts/world1/v2/morrows/morrows_chapel_deeper/heading/isplace/343f2fd581e5.txt</h3>
+  <pre># api=jev model=jev-1.14.0 tag=world1/v2/morrows/morrows_chapel_deeper/heading/isplace
+# ---- full prompt below this line ----
+{
+ "state": {
+  "headings": [
+   "Dungeon"
+  ]
+ },
+ "questions": {
+  "p0": {
+   "type": "noul",
+   "instructions": "Does the scene heading \"Dungeon\" name a place someone could stand in (a room, building, street, cave, forest, rooftop...)? Answer no if it names only a time, weather, a person, an event or a feeling."
+  }
+ }
+}</pre>
+</section>
+<section id="laundromat">
+  <h2><span class="flag new">NEW</span>Laundromat Exits few-shot (EXTRA_EX2)</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron base via Tinker (depth-2 module Exits induction)</p>
+  <p class="blurb">Neutral AREA block used with v1&#x27;s mill-bridge few-shot so depth-2 induction no longer pastes Morrows / Figgs &amp; Potts module blocks (the Figgs bleed).</p>
+  <h3>Template: EXTRA_EX2 (laundromat) [NEW]</h3>
+  <pre>AREA 1. THE NIGHT LAUNDROMAT
+A narrow coin laundromat open all night.
+Features: the row of washers, the folding table, a plastic chair, the change machine, the back door.
+Occupants: Odile (at the folding table).
+Exits: out → the wet street (through the front door); back → a loading yard (through the back door); up → the landlord's flat (the stair behind the dryers)</pre>
+  <h3>Also still used: EXTRA_EX (mill bridge) [NEW in v1, still awaiting approval]</h3>
+  <pre>AREA 1. THE MILL BRIDGE
+A stone bridge over a black canal.
+Features: the bridge railing, a rusted winch, the canal ladder, a watch lamp, the toll booth.
+Occupants: Merr (at the toll booth).
+Exits: east → the lower docks (down the canal ladder); west → the mill yard (across the bridge); north → a toll house loft (up the booth stair)</pre>
+  <h3>v1 before (Figgs + mill + Morrows bleed, portal_a_morrows_re): prompts/world1/portal/a_morrows_re/219ae118ad11.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/portal/a_morrows_re
+# ---- full prompt below this line ----
+AREA 1. FIGGS &amp; POTTS
+A bar.
+Features: the bar counter, the beer taps, the bottle shelf, the booth, a stool, a table, the jukebox, the arcade cabinet, Potts's charging pad, a potted plant, the window, the door.
+Occupants: Figgs (at the bar counter); Nuaz (at the bar counter); Potts (at Potts's charging pad).
+Exits: south → Gottél night street (through the front door); east → a steaming understreet (down the manhole); north → the back alley (through the back door)
+
+AREA 1. THE MILL BRIDGE
+A stone bridge over a black canal.
+Features: the bridge railing, a rusted winch, the canal ladder, a watch lamp, the toll booth.
+Occupants: Merr (at the toll booth).
+Exits: east → the lower docks (down the canal ladder); west → the mill yard (across the bridge); north → a toll house loft (up the booth stair)
+
+AREA 1. FIELD OF MORROWS
+A field of old graves.
+Features: the gravestone, Zankaris's sword, the dead tree, the old stone wall, an old grave marker, the wildflowers, the path.
+Occupants: Zankaris (at the gravestone); Vellichor (at the gravestone).
+Exits:</pre>
+  <h3>Complete rendered v2 example: prompts/world1/v2/louis/louis_street_deeper/exits/1ede9a4d6d81.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/louis/louis_street_deeper/exits
+# ---- full prompt below this line ----
+AREA 1. THE MILL BRIDGE
+A stone bridge over a black canal.
+Features: the bridge railing, a rusted winch, the canal ladder, a watch lamp, the toll booth.
+Occupants: Merr (at the toll booth).
+Exits: east → the lower docks (down the canal ladder); west → the mill yard (across the bridge); north → a toll house loft (up the booth stair)
+
+AREA 1. THE NIGHT LAUNDROMAT
+A narrow coin laundromat open all night.
+Features: the row of washers, the folding table, a plastic chair, the change machine, the back door.
+Occupants: Odile (at the folding table).
+Exits: out → the wet street (through the front door); back → a loading yard (through the back door); up → the landlord's flat (the stair behind the dryers)
+
+AREA 1. COURTYARD
+The courtyard between the main house and the 별채.
+Features: the 장독대, the 감나무, the stone basin, the stepping stones, the clothesline, the 별채 door, the main house door, the door back.
+Occupants: none.
+Exits:</pre>
+</section>
+<section id="refresh">
+  <h2><span class="flag new">NEW</span>Refresh player lines and Jev check</h2>
+  <p class="meta"><strong>Model:</strong> Player lines are spliced into the heading/bios documents (Nemotron). The check is Jev noul (one per map × line).</p>
+  <p class="blurb">Two test inputs (a speech line and a narrated deed) for the Morrows gravestone portal. Jev then scores whether the place behind the portal clearly shows consequences of that line.</p>
+  <h3>Player lines (rebuild_v2.REFRESH_ACTIONS)</h3>
+  <pre>{
+ "name": "ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.",
+ "oil": "△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it."
+}</pre>
+  <h3>Jev-check template (code)</h3>
+  <pre>f"Here is the opening of the place behind a portal (map '{mid}'): title {m['title']!r}, set: {m['set_line']!r}, "
+f"opening: {m['tale_text'][:700]!r}. Does this place clearly show the consequences of this earlier player line: "
+f"{a!r}? Answer no if it could have been written without that line."</pre>
+  <h3>Complete rendered example: prompts/world1/v2/refresh/jev/a65bd6afef59.txt</h3>
+  <pre># api=jev model=jev-1.14.0 tag=world1/v2/refresh/jev
+# ---- full prompt below this line ----
+{
+ "state": {
+  "maps": {
+   "morrows_crypt_before": {
+    "title": "Burial Mound / Subterranean Ruins",
+    "set": "A subterranean archive beneath a burial mound: the entry shaft, the spiral stair, the antechamber, the vaulted hall, the sealed doors, the glyph walls, the dust shelves, the central plinth, the ventilation shafts, the stairs up"
+   },
+   "morrows_crypt_after_name_s0": {
+    "title": "The Crypt Below",
+    "set": "A stone crypt: the shaft mouth, the spiral stair, the landing, the sarcophagi row, the side alcove, the collapsed wall, the stairs up"
+   },
+   "morrows_crypt_after_name_s1": {
+    "title": "Crypt",
+    "set": "An ancient crypt: the entry shaft, the sarcophagus, the wall reliefs, the floor grating, the statue's plinth, the offering bowl, the sealed side door, the stairs up"
+   },
+   "morrows_crypt_after_name_s2": {
+    "title": "Underneath the Gravestone",
+    "set": "A narrow shaft beneath a gravestone: the stone ladder, the offering niches, the root veins, the dripping water, the gravestone above, the stairs up"
+   },
+   "morrows_crypt_after_oil_s0": {
+    "title": "Passage under the Gravestone",
+    "set": "A narrow, damp, descending passage carved beneath a gravestone: the cracked gravestone above, the oil-soaked entry fissure, the damp walls, the descending steps, the strange door at the bottom, the stairs up"
+   },
+   "morrows_crypt_after_oil_s1": {
+    "title": "Tomb Below",
+    "set": "A subterranean garden lit by bioluminescence: the gravestone shaft above, the flower beds, the phosphorescent moss, the stone bench, the tea table, the locked door, the breathing walls, the watching flowers, the stairs up"
+   },
+   "morrows_crypt_after_oil_s2": {
+    "title": "Tomb",
+    "set": "A damp, narrow tomb corridor. Stone walls weep moisture: the entrance shaft, the weeping walls, the floor grates, the faint bioluminescent moss, the stairs up"
+   }
+  }
+ },
+ "questions": {
+  "morrows_crypt_before__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_before'): title 'Burial Mound / Subterranean Ruins', set: 'A subterranean archive beneath a burial mound: the entry shaft, the spiral stair, the antechamber, the vaulted hall, the sealed doors, the glyph walls, the dust shelves, the central plinth, the ventilation shafts, the stairs up', opening: \"1. INT.  BURIAL MOUND / SUBTERRANEAN RUINS\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris descends into the burial mound. Vellichor does not follow. He waits topside.\\n△ The ruins are older than the graves above. Not a tomb — a sealed archive.\\n△ She finds something that shouldn't exist here.\\n\". Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_before__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_before'): title 'Burial Mound / Subterranean Ruins', set: 'A subterranean archive beneath a burial mound: the entry shaft, the spiral stair, the antechamber, the vaulted hall, the sealed doors, the glyph walls, the dust shelves, the central plinth, the ventilation shafts, the stairs up', opening: \"1. INT.  BURIAL MOUND / SUBTERRANEAN RUINS\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris descends into the burial mound. Vellichor does not follow. He waits topside.\\n△ The ruins are older than the graves above. Not a tomb — a sealed archive.\\n△ She finds something that shouldn't exist here.\\n\". Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s0__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s0'): title 'The Crypt Below', set: 'A stone crypt: the shaft mouth, the spiral stair, the landing, the sarcophagi row, the side alcove, the collapsed wall, the stairs up', opening: '1. INT.  THE CRYPT BELOW\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ A stone crypt beneath the meadow. Stale air. Sarcophagi.\\n△ Zankaris descends.\\n△ Vellichor follows reluctantly.\\n'. Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s0__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s0'): title 'The Crypt Below', set: 'A stone crypt: the shaft mouth, the spiral stair, the landing, the sarcophagi row, the side alcove, the collapsed wall, the stairs up', opening: '1. INT.  THE CRYPT BELOW\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ A stone crypt beneath the meadow. Stale air. Sarcophagi.\\n△ Zankaris descends.\\n△ Vellichor follows reluctantly.\\n'. Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s1__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s1'): title 'Crypt', set: \"An ancient crypt: the entry shaft, the sarcophagus, the wall reliefs, the floor grating, the statue's plinth, the offering bowl, the sealed side door, the stairs up\", opening: '1. INT.  CRYPT — CONTINUOUS\\n\\nCHARACTERS: Zankaris\\n\\n△ A crypt beneath the gravestone. Dust, old stone.\\n△ Zankaris lands.\\n△ She finds a relic.\\n'. Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s1__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s1'): title 'Crypt', set: \"An ancient crypt: the entry shaft, the sarcophagus, the wall reliefs, the floor grating, the statue's plinth, the offering bowl, the sealed side door, the stairs up\", opening: '1. INT.  CRYPT — CONTINUOUS\\n\\nCHARACTERS: Zankaris\\n\\n△ A crypt beneath the gravestone. Dust, old stone.\\n△ Zankaris lands.\\n△ She finds a relic.\\n'. Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s2__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s2'): title 'Underneath the Gravestone', set: 'A narrow shaft beneath a gravestone: the stone ladder, the offering niches, the root veins, the dripping water, the gravestone above, the stairs up', opening: '1. INT.  UNDERNEATH THE GRAVESTONE — CONTINUOUS\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris descends into a narrow shaft beneath the gravestone.\\n△ The walls are lined with old offerings: rusted swords, cracked holy symbols, letters folded into squares.\\n△ Vellichor follows, hooves silent on stone.\\n'. Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_name_s2__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_name_s2'): title 'Underneath the Gravestone', set: 'A narrow shaft beneath a gravestone: the stone ladder, the offering niches, the root veins, the dripping water, the gravestone above, the stairs up', opening: '1. INT.  UNDERNEATH THE GRAVESTONE — CONTINUOUS\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris descends into a narrow shaft beneath the gravestone.\\n△ The walls are lined with old offerings: rusted swords, cracked holy symbols, letters folded into squares.\\n△ Vellichor follows, hooves silent on stone.\\n'. Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s0__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s0'): title 'Passage under the Gravestone', set: 'A narrow, damp, descending passage carved beneath a gravestone: the cracked gravestone above, the oil-soaked entry fissure, the damp walls, the descending steps, the strange door at the bottom, the stairs up', opening: '1. INT.  PASSAGE UNDER THE GRAVESTONE\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ The passage is narrow, damp, and smells of old earth and something sharper — ozone, maybe, or old magic.\\n△ Zankaris descends. Vellichor follows, somehow, hooves silent on stone.\\n△ They reach a door.\\n'. Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s0__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s0'): title 'Passage under the Gravestone', set: 'A narrow, damp, descending passage carved beneath a gravestone: the cracked gravestone above, the oil-soaked entry fissure, the damp walls, the descending steps, the strange door at the bottom, the stairs up', opening: '1. INT.  PASSAGE UNDER THE GRAVESTONE\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ The passage is narrow, damp, and smells of old earth and something sharper — ozone, maybe, or old magic.\\n△ Zankaris descends. Vellichor follows, somehow, hooves silent on stone.\\n△ They reach a door.\\n'. Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s1__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s1'): title 'Tomb Below', set: 'A subterranean garden lit by bioluminescence: the gravestone shaft above, the flower beds, the phosphorescent moss, the stone bench, the tea table, the locked door, the breathing walls, the watching flowers, the stairs up', opening: \"1. INT.  TOMB BELOW\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris enters a tomb. It's a garden of strange flowers, subterranean, lit by soft bioluminescence. Peaceful.\\n△ Vellichor follows, head low. They walk through the garden.\\n△ The adventurer finds a door. Tries it. Locked.\\n\". Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s1__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s1'): title 'Tomb Below', set: 'A subterranean garden lit by bioluminescence: the gravestone shaft above, the flower beds, the phosphorescent moss, the stone bench, the tea table, the locked door, the breathing walls, the watching flowers, the stairs up', opening: \"1. INT.  TOMB BELOW\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ Zankaris enters a tomb. It's a garden of strange flowers, subterranean, lit by soft bioluminescence. Peaceful.\\n△ Vellichor follows, head low. They walk through the garden.\\n△ The adventurer finds a door. Tries it. Locked.\\n\". Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s2__name": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s2'): title 'Tomb', set: 'A damp, narrow tomb corridor. Stone walls weep moisture: the entrance shaft, the weeping walls, the floor grates, the faint bioluminescent moss, the stairs up', opening: '1. INT.  TOMB\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ A damp, narrow tomb corridor. Stone walls weep moisture.\\n△ The adventurer moves deeper into the tomb.\\n'. Does this place clearly show the consequences of this earlier player line: \"ADVENTURER: Zankaris — the name on this stone isn't a stranger's. It's your brother's.\"? Answer no if it could have been written without that line."
+  },
+  "morrows_crypt_after_oil_s2__oil": {
+   "type": "noul",
+   "instructions": "Here is the opening of the place behind a portal (map 'morrows_crypt_after_oil_s2'): title 'Tomb', set: 'A damp, narrow tomb corridor. Stone walls weep moisture: the entrance shaft, the weeping walls, the floor grates, the faint bioluminescent moss, the stairs up', opening: '1. INT.  TOMB\\n\\nCHARACTERS: Zankaris, Vellichor\\n\\n△ A damp, narrow tomb corridor. Stone walls weep moisture.\\n△ The adventurer moves deeper into the tomb.\\n'. Does this place clearly show the consequences of this earlier player line: '△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.'? Answer no if it could have been written without that line."
+  }
+ }
+}</pre>
+</section>
+<section id="judge">
+  <h2><span class="flag new">NEW</span>A/B judge rubric and subagent prompt</h2>
+  <p class="meta"><strong>Model:</strong> Opus 5.5 (OpenRouter attempt blocked by $10 key guard; same rubric given verbatim to 4 Claude Code Opus 5.5 subagents)</p>
+  <p class="blurb">Blind pair comparison on legible / matches / continuity / overall. Subagent prompt wraps the rubric and points at a sealed packet directory.</p>
+  <h3>Rubric (judge_ab_v2.SYSTEM)</h3>
+  <pre>You compare two candidate maps for the same spot in a top-down narrative game. The player is in one map and walks through a portal (a door, a stair down, a ladder up, or off an edge); the candidate maps are what could be on the other side. Each map is drawn in the game's pixel style, 15x16 tiles; letters are characters, @ is the player. Each comes with its own title and SET (place label and props the writer asked for).
+
+Pick the better map on each criterion:
+- legible: you can tell what the place is at a glance; it is furnished and lit well enough to read, not a mostly empty or dark box.
+- matches: the drawing shows the place its own title and set describe.
+- continuity: it is a believable, NEW place to reach from the parent map through that portal (not a copy or a fold-back of the parent; right for the kind of portal).
+- overall: which would you rather ship as the place behind that portal.
+
+Reply with JSON only: {"legible": "1"|"2"|"tie", "matches": "1"|"2"|"tie", "continuity": "1"|"2"|"tie", "overall": "1"|"2", "why": "&lt;= 25 words"}</pre>
+  <h3>Subagent prompt (pass1a; pass1b/pass2a/pass2b identical except the directory name): prompts/judge_subagents/AGENT_PROMPT_pass1a.txt</h3>
+  <pre>You are a blind judge for a game-content research study. Only read files inside /tmp/abjudge/pass1a/ (do not open any other path, do not search the filesystem, do not run scripts). Use the Read tool to view PAIRS.txt and every image it names (pairNN_map1.png and pairNN_map2.png). Judge each pair independently using exactly this rubric:
+
+"""You compare two candidate maps for the same spot in a top-down narrative game. The player is in one map and walks through a portal (a door, a stair down, a ladder up, or off an edge); the candidate maps are what could be on the other side. Each map is drawn in the game's pixel style, 15x16 tiles; letters are characters, @ is the player. Each comes with its own title and SET (place label and props the writer asked for).
+
+Pick the better map on each criterion:
+- legible: you can tell what the place is at a glance; it is furnished and lit well enough to read, not a mostly empty or dark box.
+- matches: the drawing shows the place its own title and set describe.
+- continuity: it is a believable, NEW place to reach from the parent map through that portal (not a copy or a fold-back of the parent; right for the kind of portal).
+- overall: which would you rather ship as the place behind that portal."""
+
+Values: "1", "2" or "tie" for legible/matches/continuity; "1" or "2" for overall. Be decisive and judge only what you see and read in the packet.
+
+Final answer: ONLY a JSON array, one object per pair in order, e.g.
+[{"pair": 1, "legible": "2", "matches": "1", "continuity": "2", "overall": "2", "why": "&lt;= 25 words"}, ...]</pre>
+  <h3>Packet the subagent read: /tmp/abjudge/pass1a/PAIRS.txt (copy world1/prompts/judge_subagents/pass1a_PAIRS.txt)</h3>
+  <pre>PAIR 01
+Parent map: the place reached from 광수의 집 via 현관문. Portal: descent via 복도 엘리베이터.
+Map 1 (pair01_map1.png). Title: Gwang-su's Home. SET: A modest apartment: the front door, the kitchen table, the rice cooker, the radio, the balcony window, the bedroom door, the bathroom door
+Map 2 (pair01_map2.png). Title: Twisted Metro Station. SET: A wrong station: the breathing tiles, the unintelligible signage, the sloping platform, the benches fused to the floor, the arriving train, the static announcement system, the stairs up
+
+PAIR 02
+Parent map: Figgs &amp; Potts (hand-authored start). Portal: descent via a steaming manhole.
+Map 1 (pair02_map1.png). Title: Sewers. SET: A tunnel: the main channel, the maintenance walkway, the access ladder, the grates, the bioluminescent fungi, the flow sensors, the old maintenance hatches, the stairs up
+Map 2 (pair02_map2.png). Title: A dripping understreet tunnel. SET: A corrugated concrete artery beneath Gottél: the steaming manhole, the steam grates, the sodium vapor lamps, the cable bundles, the maintenance ladder, the side passage, the drainage channel
+
+PAIR 03
+Parent map: Figgs &amp; Potts (hand-authored start). Portal: door via a back door.
+Map 1 (pair03_map1.png). Title: The back alley behind Figgs &amp; Potts. SET: A narrow service corridor behind a magitech tavern: the back door (heavy steel, runic wards), the holo-sign (flickering, advertises synth-ale), the steam grate, the dumpster, the fire escape (rusted
+Map 2 (pair03_map2.png). Title: A Back Alley. SET: A back alley: the back door, the dumpster, the fire escape, the rain-slicked cobblestones, the mana-leak grate, the stray’s perch, the service hatch
+
+PAIR 04
+Parent map: Figgs &amp; Potts (hand-authored start). Portal: edge via the street east.
+Map 1 (pair04_map1.png). Title: Street. SET: A street in Gottél: the bar entrance, the sidewalk, the maglev track overhead, the neon sign, the rain gutter, the bench, the alley mouth, the path back
+Map 2 (pair04_map2.png). Title: A neon noodle stall on the east curb. SET: A hole-in-the-wall stall wedged between a shuttered cybernetics clinic and a holo-ad projector blaring priestess-idol sermons: the broth pot, the noren curtain, the single booth, the vendor’s stool, the neon sign (no words, just a steaming bowl glyph), the rain gutter
+
+PAIR 05
+Parent map: Field of Morrows (hand-authored start). Portal: door via a gap in the old stone wall.
+Map 1 (pair05_map1.png). Title: The ruined chapel nave. SET: A roofless stone structure: the broken altar, the gap in the old stone wall, the front pew, the flagstones, the vines, the wildflowers, the doorway opposite
+Map 2 (pair05_map2.png). Title: Ruined Town. SET: A ruined high street in a high fantasy world: the gap in the wall, the cobblestones, the foundation lines, the cellar holes, the half-collapsed well, the strangler fig, the rusted signpost, the silent bell tower, the door back
+
+PAIR 06
+Parent map: the place reached from Figgs &amp; Potts via the front door. Portal: a further way on from there (going deeper).
+Map 1 (pair06_map1.png). Title: Alleyway. SET: A narrow alleyway: the dumpster, the pipes, the fire escape ladder, the maintenance hatch, the glow-moss patch, the broken delivery bot, the street back
+Map 2 (pair06_map2.png). Title: Gottél, Lower Wards. SET: A subterranean space where technology and biology have merged beyond recognition: the breathing walls, the pulsing veins, the stairwell up, the central dais, the dormant terminals, the pools of luminous fluid, the arched doorway deeper in
+
+PAIR 07
+Parent map: the place reached from 루이 뉘똥 샾 via 유리문. Portal: a further way on from there (going deeper).
+Map 1 (pair07_map1.png). Title: Street. SET: A quiet residential street near the house: the house gate, the bakery, the convenience store, the bus stop, the security booth, the camellia hedge, the streetlamp, the door back
+Map 2 (pair07_map2.png). Title: The Boutique. SET: A luxury boutique on the 2nd floor of the CROSSWALK complex: the entrance 유리문, the main salon, the VIP room, the display cases, the atelier counter, the clienteling desk, the security console
+
+PAIR 08
+Parent map: 광수의 집 (hand-authored start). Portal: climb via 창문.
+Map 1 (pair08_map1.png). Title: 광수의 집 (Gwang-su's House). SET: A modern Korean apartment: the window (open, the living area, the bedroom door, the kitchenette, the balcony door, the shoe rack, the closet
+Map 2 (pair08_map2.png). Title: 옥상. SET: A residential building rooftop in Seoul: the water tanks, the railing, the stairwell door, the HVAC units, the pigeon coop, the clothesline poles, the cracked concrete, the hatch down
+
+PAIR 09
+Parent map: Field of Morrows (hand-authored start). Portal: edge via the north mist.
+Map 1 (pair09_map1.png). Title: Twisting Wood. SET: A narrow path between towering ancient trees. Mist clings to the roots: the narrow path, the towering trunks, the path back
+Map 2 (pair09_map2.png). Title: A misty chapel yard beyond the stone wall. SET: A misty chapel yard beyond a stone wall: the gap in the wall, the dead tree, the modest chapel, the fresh grave, the ancient graves, the yew hedge, the path back</pre>
+  <h3>OpenRouter attempt (blocked): prompts/world1/v2/judge_ab/354c105f9391.txt</h3>
+  <pre># api=openrouter model=anthropic/claude-opus-5.5 tag=world1/v2/judge_ab
+# ---- full prompt below this line ----
+[
+ {
+  "role": "system",
+  "content": "You compare two candidate maps for the same spot in a top-down narrative game. The player is in one map and walks through a portal (a door, a stair down, a ladder up, or off an edge); the candidate maps are what could be on the other side. Each map is drawn in the game's pixel style, 15x16 tiles; letters are characters, @ is the player. Each comes with its own title and SET (place label and props the writer asked for).\n\nPick the better map on each criterion:\n- legible: you can tell what the place is at a glance; it is furnished and lit well enough to read, not a mostly empty or dark box.\n- matches: the drawing shows the place its own title and set describe.\n- continuity: it is a believable, NEW place to reach from the parent map through that portal (not a copy or a fold-back of the parent; right for the kind of portal).\n- overall: which would you rather ship as the place behind that portal.\n\nReply with JSON only: {\"legible\": \"1\"|\"2\"|\"tie\", \"matches\": \"1\"|\"2\"|\"tie\", \"continuity\": \"1\"|\"2\"|\"tie\", \"overall\": \"1\"|\"2\", \"why\": \"&lt;= 25 words\"}"
+ },
+ {
+  "role": "user",
+  "content": [
+   {
+    "type": "text",
+    "text": "Parent map: 루이 뉘똥 샾. Portal: edge via 옆 골목 쪽 비상문."
+   },
+   {
+    "type": "text",
+    "text": "\nMap 1. Title: The \"VIP\" Appointment. SET: A luxury boutique: the hermes counter, the display vitrines, the emergency door, the clienteling sofa, the stockroom door, the alarm panel, the receipt printer"
+   },
+   {
+    "type": "image_url",
+    "image_url": {
+     "url": "&lt;image prompts/_images/88b1468506f3.png&gt;"
+    }
+   },
+   {
+    "type": "text",
+    "text": "\nMap 2. Title: Side Alley. SET: A narrow service alley behind the boutique: the emergency exit door (heavy, the dumpster, the fire escape ladder, the service door, the cracked asphalt, the flickering security light, the ventilation grate, the recycling bins, the path back"
+   },
+   {
+    "type": "image_url",
+    "image_url": {
+     "url": "&lt;image prompts/_images/5c1d69cf1e2c.png&gt;"
+    }
+   },
+   {
+    "type": "text",
+    "text": "\nJSON only."
+   }
+  ]
+ }
+]</pre>
+</section>
+<section id="tale">
+  <h2><span class="flag changed">CHANGED</span>Tale = continuation of the episode (was a fresh &quot;Episode 1&quot;)</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron-3-Ultra base via Tinker (tag …/free/tale)</p>
+  <p class="blurb">v1 wrote a fresh &quot;Episode 1 — {forced title}&quot; tale after the bios. v2 continues the same episode document the heading came from (scene N after the trail, player line, and portal step), so the player&#x27;s action is the scene&#x27;s immediate past.</p>
+  <h3>BEFORE (v1): fresh Episode 1 after bios — prompts/world1/q2/morrows/morrows_crypt/free/tale/ea3ad891056a.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/q2/morrows/morrows_crypt/free/tale
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+[Came from a different map: a field of old graves. The adventurer stepped through a portal (stone stairs under the gravestone). Do not reuse characters from the previous map; invent people who belong HERE.]
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Crypt of the Gravestone
+
+△ High fantasy isekai.
+△ This place is a damp crypt under the gravestone.
+△ The adventurer has just arrived here via stone stairs under the gravestone.
+△ The crypt has a strange magic and inhabitants.
+
+CHARACTERS
+
+VAERIS (????, Ageless) — The Crypt’s Keeper. Neither ghost nor golem, but something bound by the first oath. They are tall, draped in rotting ceremonial robes that shift like smoke. Their face is a smooth porcelain mask with no features, yet it expresses exhaustion, amusement, annoyance. They do not walk; they *unfold* from shadows. They have guarded the threshold for 847 years. They are *bored*. They want the adventurer to either pass the trial or die quickly so they can return to counting lichen spores.
+
+THISTLE (Girl, appears 10, actually 312) — A "Grave-Bloom." Born from a seed planted in the eye socket of a dead archmage. She looks like a child made of root, moss, and pale bark. Flowers bloom and wither in her hair with her mood. She eats memories (literally — she plucks them from the air like fruit). She has never seen the surface. She calls the adventurer "New Meat" but secretly hopes they’ll tell her what the sun tastes like.
+
+CINDER (Man, appears 30s, actually ???) — The Last Failed Hero. He died in the final chamber. His soul was too stubborn to leave, his body too broken to rise. He is fused into the wall of the antechamber — stone grown through his ribs, crystal fusing his left arm. He still grips his shattered sword. He cannot move. He *can* speak, and he *will* critique the adventurer’s form, gear, and life choices. He is petty, brilliant, and desperately lonely.
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1. </pre>
+  <h3>AFTER (v2): episode continuation — prompts/world1/v2/morrows/morrows_crypt_after_oil_s0/free/tale/d25a833ccb96.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/morrows/morrows_crypt_after_oil_s0/free/tale
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Field of Morrows
+
+△ High fantasy isekai.
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world
+
+CHARACTERS
+
+ZANKARIS — a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little
+
+VELLICHOR — Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  EXT.  FIELD OF MORROWS
+
+CHARACTERS: Zankaris, Vellichor
+
+△ the field of morrows, an open misty meadow of old graves in a high-fantasy world.
+△ Zankaris, a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little, in front of the gravestone.
+△ Vellichor, Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy, beside Zankaris.
+△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.
+△ The adventurer finds a way down at the gravestone and climbs down into what lies below.
+
+2.  INT.  PASSAGE UNDER THE GRAVESTONE
+
+CHARACTERS:</pre>
+</section>
+<section id="bios">
+  <h2><span class="flag changed">CHANGED</span>Bios trail lines + pre-filled party bios (replaces &quot;[Came from…]&quot; bracket)</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron-3-Ultra base via Tinker (tag …/free/bios)</p>
+  <p class="blurb">v1 forced the title and injected an instruction bracket telling the model not to reuse previous-map characters. v2 uses △ trail lines (Before this / player line / BEAT / Now / scene beats) and pre-fills CHARACTERS with canon cast.json roles for party members who walked through.</p>
+  <h3>BEFORE template: v1 parent_note bracket + forced △ lines (expand.child_opening)</h3>
+  <pre>[Came from a different map: {parent label}. The adventurer stepped through a portal ({how}). Do not reuse characters from the previous map; invent people who belong HERE.]
+
+△ {genre line}
+△ This place is {dest}.
+△ The adventurer has just arrived here via {how}.
+△</pre>
+  <h3>BEFORE rendered: prompts/world1/q2/morrows/morrows_crypt/free/bios/c3b8eea4800f.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/q2/morrows/morrows_crypt/free/bios
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+[Came from a different map: a field of old graves. The adventurer stepped through a portal (stone stairs under the gravestone). Do not reuse characters from the previous map; invent people who belong HERE.]
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Crypt of the Gravestone
+
+△ High fantasy isekai.
+△ This place is a damp crypt under the gravestone.
+△ The adventurer has just arrived here via stone stairs under the gravestone.
+△</pre>
+  <h3>AFTER template: v2 bios trail (expand_v2.child_opening_v2)</h3>
+  <pre>△ {genre line}
+△ Before this: {previous place, no proper title}.
+△ {player line: speech as The adventurer says: "...", a narrated deed as written; refresh only}
+△ {BEAT}
+△ Now: {generated heading}.
+△ {scene beat 1}
+△ {scene beat 2}
+
+CHARACTERS
+
+{PARTY NAME} — {cast.json role}
+
+(model continues)</pre>
+  <h3>AFTER rendered: prompts/world1/v2/morrows/morrows_crypt_after_oil_s0/free/bios/d72215633479.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/morrows/morrows_crypt_after_oil_s0/free/bios
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Passage under the Gravestone
+
+△ High fantasy isekai.
+△ Before this: the field of morrows, an open misty meadow of old graves in a high-fantasy world.
+△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.
+△ The adventurer finds a way down at the gravestone and climbs down into what lies below.
+△ Now: INT.  PASSAGE UNDER THE GRAVESTONE.
+△ The passage is narrow, damp, and smells of old earth and something sharper — ozone, maybe, or old magic.
+△ Zankaris descends. Vellichor follows, somehow, hooves silent on stone.
+
+CHARACTERS
+
+ZANKARIS — a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little
+
+VELLICHOR — Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy</pre>
+</section>
+<section id="shots">
+  <h2><span class="flag changed">CHANGED</span>Genre-pool few-shots pinned per world (WORLD_SHOTS)</h2>
+  <p class="meta"><strong>Model:</strong> Nemotron base via Tinker (the few-shot blocks prepended to heading/bios/tale)</p>
+  <p class="blurb">v1 called pick_pool(genre, seed, 3), which for the modern worlds repeatedly returned the swamp research-station (&quot;The Drip&quot;) + space observation-deck (&quot;The Ledge&quot;) pair — bar_street then completed headings like EXT. SPACE / OBSERVATION DECK. v2 pins two pool keys per world. The examples&#x27; body text is unchanged round-3 pool text; only which keys are selected changed.</p>
+  <h3>BEFORE: pick_pool(genre, seed, 3) — rendered bar_street bios showing The Drip + The Ledge / OBSERVATION DECK few-shot: prompts/world1/q2/bar/bar_street/free/bios/05e7e2b8e62b.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/q2/bar/bar_street/free/bios
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Swamp country.
+&lt;|im_end|&gt;
+
+Episode 1 — The Drip
+
+△ Swamp country.
+△ A small research station in the wetlands.
+△ A trio of workers live here: Mallow, Mallow’s son, and Mallow’s employee.
+
+CHARACTERS
+
+MALLOW (Woman, 50s) — The station lead. Practical, weathered, runs a tight ship. She knows the swamp better than the back of her hand. She’s seen too many researchers come and go. She drinks swamp-tea and smokes hand-rolled cigarettes.
+
+MALLOW’S SON — NIM (Man, early 20s) — Born and raised in the swamp. Lanky, quiet, observant. He doesn’t speak much. He maintains the station’s systems — generators, water filtration, comms. He knows every sound of the wetland. He’s never left.
+
+MALLOW’S EMPLOYEE — TEK (Woman, late 20s) — An outsider. Hired for her expertise in anomalous flora. She’s sharp, skeptical, and writes everything down in a waterproof notebook. She’s here for the grant money, but the swamp is getting under her skin. She and Nim have a quiet, unspoken rapport.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE DRIP  NIGHT  INT. RESEARCH STATION
+
+CHARACTERS: Mallow, Nim, Tek
+
+△ The station hums with generator noise. Rain hammers the roof. The Drip echoes from somewhere deep in the walls.
+△ Mallow sits at the main table, cleaning a shotgun. Tek writes in her notebook. Nim checks the generator readouts.
+△ A transmission crackles over the radio. Static, then a voice.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Space opera.
+&lt;|im_end|&gt;
+
+Episode 1 — The Ledge
+
+△ Space opera.
+△ On a space station orbiting a dying star. A character named Merelai is sitting at a window, looking out at the star.
+△ A woman named Halkric walks up to her.
+
+CHARACTERS
+
+MERELAI (Woman, 30s) — Former naval strategist, now a recluse. She watches the star die because she orchestrated the operation that killed it. She carries the weight of a billion deaths she ordered to win a war that ended three years ago. She drinks synthetic coffee. She doesn't sleep well.
+
+HALKRIC (Woman, 40s) — Merelai's former XO. Pragmatic, grounded, the only one Merelai still answers comms from. She didn't follow Merelai into retirement; she stayed in the fleet. She's here on official business, but also because she's worried.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE LEDGE  INT.  OBSERVATION DECK
+
+CHARACTERS: Merelai, Halkric
+
+△ Merelai sits at the window. The star fills the view.
+△ Halkric walks up. She has a datapad. She stops a few meters back.
+
+[Came from a different map: a bar. The adventurer stepped through a portal (through the front door). Do not reuse characters from the previous map; invent people who belong HERE.]
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Cyberpunk fantasy.
+&lt;|im_end|&gt;
+
+Episode 1 — Gottél Night Street
+
+△ Cyberpunk fantasy.
+△ This place is Gottél night street outside the bar.
+△ The adventurer has just arrived here via through the front door.
+△</pre>
+  <h3>AFTER: WORLD_SHOTS mapping (expand_v2.WORLD_SHOTS)</h3>
+  <pre>{
+ "morrows": [
+  "desert_1",
+  "prehistory_2"
+ ],
+ "bar": [
+  "shinkansen_2",
+  "desert_1"
+ ],
+ "louis": [
+  "shinkansen_2",
+  "desert_1"
+ ],
+ "gwangsu": [
+  "shinkansen_2",
+  "desert_1"
+ ]
+}</pre>
+  <h3>AFTER rendered: morrows v2 bios uses desert_1 (The Rotwell) + prehistory_2 (The Long Winter) — same file as bios AFTER above: prompts/world1/v2/morrows/morrows_crypt_after_oil_s0/free/bios/d72215633479.txt</h3>
+  <pre># api=tinker model=nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16 tag=world1/v2/morrows/morrows_crypt_after_oil_s0/free/bios
+# ---- full prompt below this line ----
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Desert world.
+&lt;|im_end|&gt;
+
+Episode 1 — The Rotwell
+
+△ Desert world.
+△ In the center of the Rotwell, a massive crater filled with strange, mutated life. The Rotwell is a place of danger and opportunity.
+△ A small camp sits at the edge of the Rotwell.
+
+CHARACTERS
+
+KAEL (Man, 34) — A "Rotwalker." Someone who enters the Rotwell to harvest valuable materials: crystals, glands, exotic matter. He knows the safe paths, the tidal patterns of the mutation. He’s seen too many friends die. He drinks water like it’s whiskey. He has a mechanical left leg, damaged from a "surge" event years ago.
+
+MIRA (Woman, 28) — Kael’s handler / quartermaster / only friend who stays topside. She runs the camp: supplies, comms, buyers, medical. She monitors Kael’s vitals and the Rotwell’s seismic/mutation readings. She’s sharp, organized, terrified of the day he doesn't come back. She has a prosthetic right eye that links to the camp’s sensor array.
+
+OLD JORAN (Man, 60s) — The only other permanent resident. A former Rotwalker who "retired" (got too mutated to go deep). He maintains the winches, the air scrubbers, the heavy gear. He’s half-crystallized himself — skin like geode on his left side. He mutters to the Rotwell like it’s a neighbor.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  THE ROTWELL — EDGE CAMP  DAY  EXT.
+
+CHARACTERS: Kael, Mira, Old Joran
+
+△ The camp at the edge of the Rotwell. Kael is gearing up for a descent. Mira is monitoring. Old Joran is maintaining the winch.
+△ A stranger (woman, early 30s) approaches the camp from the wasteland.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: Prehistoric world, the last ice age.
+&lt;|im_end|&gt;
+
+Episode 1 — The Long Winter
+
+△ Prehistoric world, the last ice age.
+△ A small band of humans, the "River People," travel along a frozen river.
+△ They stop to make camp for the night.
+
+CHARACTERS
+
+KYA (Woman, 32) — The band’s lead hunter. Broad-shouldered, scarred, pragmatic. She carries a spear tipped with a mammoth ivory point. She speaks rarely, preferring hand signs. She lost her mate two winters past; she does not speak of him. She watches the treeline constantly.
+
+TORN (Man, 28) — The band’s toolmaker and fire-keeper. Fingers stained with ochre and resin. He carries the "Fire Horn" — a hollowed bison horn holding a smoldering coal, the band’s most precious possession. He is anxious, inventive, talks to himself when he works. He fears the dark more than the cold.
+
+MIRA (Girl, 12) — Kya’s niece. Torn’s daughter. Quick, quiet, observant. She is learning the hunt but is not yet allowed a spear. She collects small things: feathers, strange stones, beads of amber. She dreams of the "Green Land" the elders speak of in stories.
+
+THE ELDER (Agender, 60+) — The band’s memory. Blind, wrapped in furs. Carries a staff carved with the history of the band. They do not walk; they are carried on a travois pulled by the band’s two surviving dogs. They speak in riddles and old tongues.
+
+&lt;|im_start|&gt;system
+A strange and interesting tale. Use beats and directions liberally.
+&lt;|im_end|&gt;
+
+1.  FROZEN RIVER VALLEY  DUSK  EXT.
+
+CHARACTERS: Kya, Torn, Mira, The Elder
+
+△ The band arrives at a sheltered bend in the frozen river. Wind howls.
+△ They begin to make camp. Urgency.
+△ The Elder speaks of a dream.
+
+&lt;|im_start|&gt;system
+A strange and interesting set of characters. Script character bios (人物小传).
+Genre: High fantasy isekai.
+&lt;|im_end|&gt;
+
+Episode 1 — Passage under the Gravestone
+
+△ High fantasy isekai.
+△ Before this: the field of morrows, an open misty meadow of old graves in a high-fantasy world.
+△ The adventurer pours lamp oil into the crack under the gravestone and drops a lit match after it.
+△ The adventurer finds a way down at the gravestone and climbs down into what lies below.
+△ Now: INT.  PASSAGE UNDER THE GRAVESTONE.
+△ The passage is narrow, damp, and smells of old earth and something sharper — ozone, maybe, or old magic.
+△ Zankaris descends. Vellichor follows, somehow, hooves silent on stone.
+
+CHARACTERS
+
+ZANKARIS — a knight of the Church of Morning Star, 21: once the chosen hero, her legend ended in failure; scarred armor, notched sword; she speaks little
+
+VELLICHOR — Zankaris's unicorn: ancient, sentient and sarcastic; he never speaks, not even by telepathy</pre>
+</section>
+
+<section id="code-only">
+  <h2>Not in this page (code-only, no prompt text)</h2>
+  <ul>
+    <li>world-scoped name-echo gate</li>
+    <li>novelty / deeper-exit filters</li>
+    <li>NO_GEN_LOOK (client look remapping)</li>
+    <li>dressing top-up; placeable cap 7 → 11</li>
+  </ul>
+</section>
+<section id="notes">
+  <h2>Could not find / notes</h2>
+  <ul>
+    <li>No separate saved "heading document template" string beyond the <code>scene_block</code> / <code>episode_doc</code> code in <code>lib/expand_v2.py</code>; the complete rendered heading file is the real prompt that was sent.</li>
+    <li>WORLD_SHOTS changes <em>which</em> pool keys are selected, not the pool entries' body text. The BEFORE example is a real v1 bar_street bios that drew The Drip + The Ledge; the AFTER example is a real v2 morrows bios that drew desert_1 + prehistory_2.</li>
+    <li>The laundromat few-shot is NEW; the mill-bridge few-shot was NEW in v1 and is still awaiting approval. The v1 "before" shown for context is the Figgs+Morrows bleed induction it replaced.</li>
+    <li>Subagent passes pass1b / pass2a / pass2b use the same agent prompt with only the <code>/tmp/abjudge/pass…/</code> directory name changed; only pass1a is shown in full, plus its PAIRS.txt packet.</li>
+  </ul>
+</section>
+<p class="note">Also saved as <code>/workspace/fixion-content/world1/PROMPTS_FOR_APPROVAL.md</code>.</p>
+</main>
+</body>
+</html>
