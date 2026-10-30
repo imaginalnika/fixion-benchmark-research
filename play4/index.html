@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1517"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Fixion · play4</title><link rel="stylesheet" href="style.css"></head>
+<body><div id="app">
+<header id="top">
+ <select id="world" aria-label="World"></select>
+ <select id="beat" aria-label="Recorded session"></select>
+ <button id="graphBtn" class="tog" aria-pressed="false" title="The world graph">graph</button>
+ <button id="menuBtn" class="tog" aria-expanded="false" title="Menu and debug toggles">menu</button>
+</header>
+<section id="stage">
+ <canvas id="game" tabindex="0" aria-label="Map. Tap to walk; arrows or WASD."></canvas>
+ <div id="maptitle"><span id="mtTitle">Loading…</span><span id="badge"></span></div>
+ <div id="timeline" hidden><div class="tl-head"><b id="tlClock">t+0.0 s</b><span id="tlInfo"></span></div><div class="tl-track" id="tlTrack"><div id="tlHead"></div></div></div>
+ <div id="graph" hidden>
+  <div class="g-head"><b>World graph</b><span class="g-legend"><i style="--c:var(--hand)"></i>hand<i style="--c:var(--opus)"></i>opus<i style="--c:var(--sonnet)"></i>sonnet<i style="--c:var(--qwen)"></i>qwen<i style="--c:var(--pcg)"></i>pcg</span><button id="graphClose" aria-label="Close the graph">×</button></div>
+  <div class="g-key">dashed = planned · thick = frozen · pulsing = building · ● = you</div>
+  <svg id="gsvg" role="img" aria-label="World graph"></svg>
+  <div id="gcard" hidden></div>
+ </div>
+ <div id="menu" hidden>
+  <div class="m-row"><button id="restart">restart</button><span class="m-note" id="modeNote">replay</span></div>
+  <div class="m-sec">debug</div>
+  <label><input type="checkbox" data-dbg="portals"> portal cells</label>
+  <label><input type="checkbox" data-dbg="grid"> grid</label>
+  <label><input type="checkbox" data-dbg="badge"> node badge on the title</label>
+  <label><input type="checkbox" data-dbg="timeline"> candidate timeline + clock</label>
+  <div class="m-row speed" role="group" aria-label="Replay speed"><span>speed</span><button data-speed="1">1x</button><button data-speed="4">4x</button><button data-speed="0">instant</button></div>
+  <div class="m-sec">live server (optional)</div>
+  <div class="m-row"><input id="server" type="url" placeholder="https://host:port" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="connect">connect</button></div>
+  <p class="m-foot">play4 · replays recorded world4 sessions. Leave by an edge to arrive on the opposite edge; doors put you on the doorstep.</p>
+ </div>
+</section>
+<div id="controls">
+ <div id="status" role="status" aria-live="polite"><span id="statusText">…</span><button id="logBtn" aria-expanded="false">log</button></div>
+ <form id="say" autocomplete="off"><input id="sayInput" type="text" enterkeyhint="send" placeholder="Say something…" aria-label="Say something"><button type="submit" id="send">send</button></form>
+ <div id="chips" aria-label="Lines to say"></div>
+ <div id="dpad" aria-label="Movement"><button data-dir="0,-1" aria-label="North" style="grid-area:u">▲</button><button data-dir="-1,0" aria-label="West" style="grid-area:l">◀</button><button data-dir="0,1" aria-label="South" style="grid-area:d">▼</button><button data-dir="1,0" aria-label="East" style="grid-area:r">▶</button></div>
+</div>
+<div id="sheet" hidden><div class="s-head"><button class="tab on" data-tab="log">log</button><button class="tab" data-tab="people">people</button><span class="s-clock" id="sClock"></span><button id="sheetClose" aria-label="Close">×</button></div><div id="sBody"></div></div>
+</div>
+<script src="replay.js"></script><script src="game.js"></script></body></html>

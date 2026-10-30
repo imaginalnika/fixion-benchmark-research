@@ -1,0 +1,107 @@
+[
+ {
+  "name": "bar_beggar",
+  "world": "bar",
+  "title": "Figgs & Potts · the beggar in the corner",
+  "line": "let's talk to the beggar in the corner",
+  "file": "bar_beggar/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "bar_beggar_opus",
+  "world": "bar",
+  "title": "Figgs & Potts · the beggar in the corner (opus planner)",
+  "line": "let's talk to the beggar in the corner",
+  "file": "bar_beggar_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "bar_cat",
+  "world": "bar",
+  "title": "Figgs & Potts · have you seen my cat?",
+  "line": "have you seen my cat?",
+  "file": "bar_cat/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "louis_beggar",
+  "world": "louis",
+  "title": "루이 뉘똥 · the beggar in the corner",
+  "line": "let's talk to the beggar in the corner",
+  "file": "louis_beggar/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "louis_beggar_opus",
+  "world": "louis",
+  "title": "루이 뉘똥 · the beggar in the corner (opus planner)",
+  "line": "let's talk to the beggar in the corner",
+  "file": "louis_beggar_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "morrows_cat",
+  "world": "morrows",
+  "title": "Morrows · have you seen my cat?",
+  "line": "have you seen my cat?",
+  "file": "morrows_cat/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "morrows_cat_opus",
+  "world": "morrows",
+  "title": "Morrows · have you seen my cat? (opus planner)",
+  "line": "have you seen my cat?",
+  "file": "morrows_cat_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ }
+]
