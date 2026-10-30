@@ -19,6 +19,7 @@ button:disabled{opacity:.38;cursor:default}
 #mtTitle{background:#0d1517d9;border:1px solid #ffffff1c;border-radius:12px;padding:3px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #badge{display:none;background:#0d1517e6;border:1px solid #ffffff22;border-radius:10px;padding:2px 7px;font-size:11px;white-space:nowrap}
 body.dbg-badge #badge{display:inline-block}
+#plannerTag{background:#0d1517d9;border:1px solid var(--c,#ffffff33);color:var(--c,#ddd);border-radius:10px;padding:2px 7px;font-size:11px;white-space:nowrap}#plannerTag[hidden]{display:none}
 #badge .m{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
 /* timeline (debug) */
 #timeline{position:absolute;left:6px;right:6px;bottom:6px;background:#0c1416e8;border:1px solid #ffffff22;border-radius:8px;padding:5px 8px 7px;font-size:11px;pointer-events:none}
@@ -56,7 +57,7 @@ body.dbg-badge #badge{display:inline-block}
 .speed span{color:var(--muted);margin-right:4px}.speed button{height:28px;font-size:12px;padding:0 8px}.speed button.on{background:#24443b;border-color:var(--mint)}
 #server{flex:1;min-width:0;height:32px;font-size:16px;background:#0e1617;border:1px solid #3a4b49;border-radius:8px;padding:0 8px}
 #connect{height:32px;font-size:12px}
-.m-foot{color:#6f837d;font-size:11px;margin:10px 0 0}
+.m-foot{color:#6f837d;font-size:11px;margin:8px 0 0}.m-foot a{color:var(--mint);word-break:break-all}.m-pkg{margin:6px 0 0;font-size:12.5px;color:#dfe7e1}#liveNote{margin:4px 0 0;color:#9fe6b4}#beat:disabled{opacity:.8}
 /* graph */
 #graph{position:absolute;inset:0;background:#0b1213;z-index:4;display:flex;flex-direction:column}
 #graph[hidden],#menu[hidden],#timeline[hidden],#sheet[hidden],#gcard[hidden]{display:none}

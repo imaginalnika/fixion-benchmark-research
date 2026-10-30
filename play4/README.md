@@ -28,6 +28,8 @@ Run locally: `cd world4/play4site && python3 -m http.server 8765`, open `http://
    apostrophes ignored). Lines of the world's packages that are not presets get extra (dashed) chips.
 
 Several packages may share a line (e.g. two recordings): the one selected in the session select wins, else the first.
+Optional index fields `planner`, `models`, `policy` show in the session select (`“line” · opus planner`), in a small
+planner tag next to the map title and in the menu's about section (with the package `title`).
 
 ## Replay semantics (what the client does)
 
@@ -56,7 +58,10 @@ Several packages may share a line (e.g. two recordings): the one selected in the
 
 ## Live mode
 
-Menu → live server → `https://host:port` → connect. `POST /api/session {world}` → `{sid, package}`; lines go to
+Menu → live server → `https://host:port` → connect (`live.json` = `{"server": "..."}` next to index.html prefills the
+field and shows "live server available"; never auto-connects; absent or dead is quiet). Live, the world select lists the
+four worlds (morrows, bar, louis, gwangsu); changing it opens a new session for that world (a failure keeps the current
+one); the session select reads "live" and all chips are enabled. `POST /api/session {world}` → `{sid, package}`; lines go to
 `POST /api/session/<sid>/line {text}`; events come from `GET /api/session/<sid>/events?since=n` (long-poll) and apply at
 once; entering a map posts `POST /api/session/<sid>/enter {node}`. Asset paths: absolute URLs as is, `/x` against the
 server, `assets/...` against `<server>/sessions/<sid>/`, anything else against the server root. If the server is
@@ -64,6 +69,10 @@ unreachable the client stays in replay mode. Clearing the field and pressing con
 `python3 dev/mock_live.py <port>` is a mock server that replays the packages in real time (CORS on) for testing.
 
 ## Debug (menu, all off by default; remembered in localStorage)
+
+Graph: stub nodes (promised by a built map, no plan yet) are small dashed "promised" boxes labelled from the id (world
+prefix and underscores stripped), placed beside the node that promises them (a link, `promised_by`, or the longest node
+id that prefixes the stub id) with a dashed line to it.
 
 Portal cells, grid (blocked cells tinted), node badge on the map title (status · model · seconds · frozen), candidate
 timeline with the beat clock (log time axis; filled dot = installed, ring = late/invalid/refused), replay speed. The
@@ -73,10 +82,13 @@ Esc = close panels, backtick = portal cells. `window.play4` exposes state and th
 
 ## Dev
 
-- `python3 dev/make_synth.py` rebuilds the synthetic packages from playable3/site/best.json (bar_cat_01: say, overlay with
+- `python3 dev/make_synth.py --out /tmp/p4synth [--json-only]` builds the synthetic packages (never into sessions/, which
+  now holds the real recordings) from playable3/site/best.json (bar_cat_01: say, overlay with
   a grey cat + a beggar, the cellar planned, a 4-model race with copies of existing maps, a hatch added to the street;
   bar_beggar_01; morrows_taichi_01 with a node that never finishes). The orchestrator replaces them with recordings.
-- `node dev/test_replay.js`: 40 logic checks of replay.js (resolution, overlay, install order, freeze/late, stranding
+- `node dev/test_replay.js [fixtures dir]`: generates the synthetic fixtures into /tmp/p4fixtures on first use; 40 logic checks of replay.js (resolution, overlay, install order, freeze/late, stranding
   refusal, invalid, accumulation, nudge, live freeze, add_actor/add_prop/rename_prop, two-line packages, landings).
 - `node dev/shoot.mjs <outdir> <port>`: headless Chrome screenshots (430x932@3, 430x760@3, 932x430@3, 1440x900) with real
-  touch input; `node dev/live_test.mjs <outdir> <port> <mockport>`: live mode against the mock.
+  touch input; `node dev/live_test.mjs <outdir> <port> <mockport>`: live mode against the mock;
+  `node dev/shoot_v2.mjs <outdir> <site port> <stub-site port> <mock port>`: the v2 pass (real recordings, live header,
+  promised nodes); `dev/live_real.mjs` and `dev/replay_check.mjs` (the orchestrator's) drive the real server/recordings.

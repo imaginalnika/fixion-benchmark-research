@@ -12,7 +12,7 @@
 </header>
 <section id="stage">
  <canvas id="game" tabindex="0" aria-label="Map. Tap to walk; arrows or WASD."></canvas>
- <div id="maptitle"><span id="mtTitle">Loading…</span><span id="badge"></span></div>
+ <div id="maptitle"><span id="mtTitle">Loading…</span><span id="plannerTag" hidden></span><span id="badge"></span></div>
  <div id="timeline" hidden><div class="tl-head"><b id="tlClock">t+0.0 s</b><span id="tlInfo"></span></div><div class="tl-track" id="tlTrack"><div id="tlHead"></div></div></div>
  <div id="graph" hidden>
   <div class="g-head"><b>World graph</b><span class="g-legend"><i style="--c:var(--hand)"></i>hand<i style="--c:var(--opus)"></i>opus<i style="--c:var(--sonnet)"></i>sonnet<i style="--c:var(--qwen)"></i>qwen<i style="--c:var(--pcg)"></i>pcg</span><button id="graphClose" aria-label="Close the graph">×</button></div>
@@ -30,7 +30,11 @@
   <div class="m-row speed" role="group" aria-label="Replay speed"><span>speed</span><button data-speed="1">1x</button><button data-speed="4">4x</button><button data-speed="0">instant</button></div>
   <div class="m-sec">live server (optional)</div>
   <div class="m-row"><input id="server" type="url" placeholder="https://host:port" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="connect">connect</button></div>
-  <p class="m-foot">play4 · replays recorded world4 sessions. Leave by an edge to arrive on the opposite edge; doors put you on the doorstep.</p>
+  <p class="m-note" id="liveNote" hidden></p>
+  <div class="m-sec">about</div>
+  <p class="m-pkg" id="pkgTitle"></p>
+  <p class="m-foot">world4 proof of concept · design: GRAPH.md · report: REPORT.md · <a href="https://github.com/imaginalnika/fixion-benchmark-research" target="_blank" rel="noopener">github.com/imaginalnika/fixion-benchmark-research</a></p>
+  <p class="m-foot">Replays recorded world4 sessions. Leave by an edge to arrive on the opposite edge; doors put you on the doorstep.</p>
  </div>
 </section>
 <div id="controls">

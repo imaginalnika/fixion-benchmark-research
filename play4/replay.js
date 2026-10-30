@@ -145,6 +145,7 @@
       while (P.cursor < A.end) { this._apply(ev[P.cursor], P, P.cursor, false); P.cursor++; }
       this.active = null;
     }
+    get pkg() { const id = this.active ? this.active.id : Object.keys(this.pkgs)[0]; return id && this.pkgs[id] ? this.pkgs[id].pkg : null; }
     get playing() { const A = this.active; return !!(A && this.pkgs[A.id].cursor < A.end); }
     get beatTime() { return this.active ? this.clock - this.active.t0 : 0; }
     // advance the beat clock by dt package-seconds (Infinity = instant); returns the events applied

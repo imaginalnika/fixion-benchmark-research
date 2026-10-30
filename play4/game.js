@@ -5,6 +5,8 @@
 const $ = id => document.getElementById(id), R = window.Replay;
 const canvas = $('game'), ctx = canvas.getContext('2d');
 const PRESETS = ['have you seen my cat?', "let's talk to the beggar in the corner", 'check behind the cellar', 'I want to train tai chi', "I want to see the dragon everybody's been talking about"];
+const WORLDS = [{ id: 'morrows', title: 'Field of Morrows' }, { id: 'bar', title: 'Figgs & Potts' }, { id: 'louis', title: '루이 뉘똥 샾' }, { id: 'gwangsu', title: '광수의 집' }];
+const REPO = 'https://github.com/imaginalnika/fixion-benchmark-research';
 const COL = { hand: '#9ba3a6', opus: '#b386f5', sonnet: '#5eaaf2', qwen: '#f2a24c', pcg: '#6fcb7c' };
 const SESS = new URL('sessions/', location.href).href;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -110,14 +112,40 @@ async function loadBase(e, keepStatus = false) {
   world = e.world; base = e; bubble = null;
   $('world').value = world; $('beat').value = e.name;
   open(pkg.start && S.maps[pkg.start] ? pkg.start : Object.keys(S.maps)[0]);
-  renderChips(); renderSheet(); if (graphOpen) drawGraph();
+  renderChips(); renderSheet(); if (graphOpen) drawGraph(); showPkgTitle();
   if (!keepStatus) status(idleText());
   history.replaceState(null, '', '#' + world + '/' + e.name);
 }
-function worldsOf() { const out = []; for (const e of index) if (!out.find(w => w.id === e.world)) out.push({ id: e.world, title: e.world_title || (e.title || '').split(' · ')[0] || e.world }); return out; }
+// replay: the worlds that have packages (index order); live: the four worlds (+ any other world in the index)
+function worldsOf() {
+  const out = [];
+  if (live) for (const w of WORLDS) out.push({ ...w });
+  for (const e of index) if (!out.find(w => w.id === e.world)) out.push({ id: e.world, title: e.world_title || (e.title || '').split(' · ')[0] || e.world });
+  for (const w of out) { const e = index.find(x => x.world === w.id && x.world_title); if (e) w.title = e.world_title; }
+  return out;
+}
+function fillWorlds() {
+  const sel = $('world'); sel.replaceChildren();
+  for (const w of worldsOf()) { const o = document.createElement('option'); o.value = w.id; o.textContent = w.title; sel.append(o); }
+  if (world) sel.value = world;
+}
+function beatLabel(e) { return (e.line ? '“' + e.line + '”' : e.title) + (e.planner ? ' · ' + e.planner + ' planner' : ''); }
 function fillBeats() {
   const sel = $('beat'); sel.replaceChildren();
-  for (const e of index.filter(e => e.world === world)) { const o = document.createElement('option'); o.value = e.name; o.textContent = e.line ? '“' + e.line + '”' : e.title; o.title = e.title; sel.append(o); }
+  if (live) { const o = document.createElement('option'); o.value = ''; o.textContent = 'live'; sel.append(o); sel.disabled = true; sel.title = 'live session: say anything'; return; }
+  sel.disabled = false; sel.title = 'recorded session';
+  for (const e of index.filter(e => e.world === world)) {
+    const o = document.createElement('option'); o.value = e.name; o.textContent = beatLabel(e);
+    o.title = [e.title, e.models && 'models: ' + e.models.join(', '), e.policy && 'policy ' + e.policy].filter(Boolean).join(' · '); sel.append(o);
+  }
+  if (base && base.world === world) sel.value = base.name;
+}
+function showPkgTitle() {
+  const t = live ? `live session ${live.sid} · ${(worldsOf().find(w => w.id === world) || {}).title || world}${live.title ? ' · ' + live.title : ''}`
+    : base ? `${base.title || base.name}${base.planner && !String(base.title || '').includes(base.planner + ' planner') ? ' · ' + base.planner + ' planner' : ''}${base.models ? ' · race: ' + base.models.join(', ') : ''}` : '';
+  $('pkgTitle').textContent = t;
+  const pt = $('plannerTag'), pl = !live && base && base.planner;        // which planner made this recording (compare two of one line)
+  pt.hidden = !pl; if (pl) { pt.textContent = pl + ' planner'; pt.style.setProperty('--c', COL[pl] || '#ddd'); }
 }
 function renderChips() {
   const box = $('chips'); box.replaceChildren();
@@ -175,21 +203,36 @@ async function fetchJSON(url, opt = {}, ms = 8000) {
   try { const r = await fetch(url, { ...opt, signal: ac.signal }); if (!r.ok) throw Error(r.status); return await r.json(); } finally { clearTimeout(to); }
 }
 function post(path, body) { return fetchJSON(`${live.url}/api/session/${live.sid}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); }
-async function connect() {
+async function toReplay(note) {
+  live = null; $('modeNote').textContent = note;
+  if (!index.some(e => e.world === world)) world = (index[0] || {}).world || world;
+  fillWorlds(); fillBeats(); showPkgTitle();
+  const e = (base && base.world === world && base) || index.find(x => x.world === world);
+  if (e) await loadBase(e, true);
+}
+// live: POST /api/session {world} -> {sid, package}; switching worlds = a new session; unreachable -> stay in replay
+async function connect(w = null) {
   const url = $('server').value.trim().replace(/\/+$/, ''); store.set('server', url);
-  if (!url) { live = null; $('modeNote').textContent = 'replay'; if (base) await loadBase(base); return; }
+  if (!url) { if (live) await toReplay('replay'); else $('modeNote').textContent = 'replay'; return; }
+  const want = (typeof w === 'string' && w) || world || 'bar', was = live;
   $('modeNote').textContent = 'connecting…';
   try {
-    const r = await fetchJSON(url + '/api/session', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ world }) }, 8000);
-    const sid = r.sid, pkg = r.package;
-    const Rz = p => !p || typeof p !== 'string' ? p : /^[a-z][a-z0-9+.-]*:/i.test(p) ? p : p[0] === '/' ? url + p : p.startsWith('assets/') ? `${url}/sessions/${sid}/${p}` : `${url}/${p}`;
-    live = { url, sid, n: 0, Rz };
+    const r = await fetchJSON(url + '/api/session', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ world: want }) }, 10000);
+    const sid = r.sid, pkg = r.package || {};
+    const ab = new URL(pkg.assets_base || `/sessions/${sid}/`, url + '/').href;
+    const Rz = p => !p || typeof p !== 'string' ? p : /^[a-z][a-z0-9+.-]*:/i.test(p) ? p : p[0] === '/' ? new URL(p, url + '/').href : new URL(p, ab).href;
+    live = { url, sid, n: 0, Rz, title: pkg.title };
+    world = pkg.world || want; bubble = null;
     S = new R.Session({ mode: 'live', hooks }); S.load(pkg, Rz); preload(pkg, Rz);
+    fillWorlds(); fillBeats(); showPkgTitle();
     open(pkg.start && S.maps[pkg.start] ? pkg.start : Object.keys(S.maps)[0]);
     renderChips(); $('modeNote').textContent = 'live · ' + sid; status(idleText());
+    if (graphOpen) drawGraph();
+    history.replaceState(null, '', '#' + world + '/live');
     poll(live);
   } catch (err) {
-    live = null; $('modeNote').textContent = 'replay (server unreachable)';
+    if (was) { live = was; $('modeNote').textContent = 'live · ' + was.sid + ' (new session failed)'; fillWorlds(); status('the server did not open a session for that world', 'warn', 3500); return; }
+    await toReplay('replay (server unreachable)');
     status('server unreachable; staying in replay mode', 'warn', 3500);
   }
 }
@@ -302,13 +345,17 @@ $('menuBtn').onclick = () => setMenu($('menu').hidden);
 function setGraph(on) { graphOpen = on; $('graph').hidden = !on; $('graphBtn').setAttribute('aria-pressed', on ? 'true' : 'false'); $('gcard').hidden = true; if (on) { setMenu(false); drawGraph(); } }
 $('graphBtn').onclick = () => setGraph(!graphOpen);
 $('graphClose').onclick = () => setGraph(false);
-$('restart').onclick = async () => { setMenu(false); if (live) await connect(); else if (base) await loadBase(base); };
+$('restart').onclick = async () => { setMenu(false); if (live) await connect(world); else if (base) await loadBase(base); };
 function setDbg(k, on) { dbg[k] = on; store.set('dbg', dbg); for (const c of document.querySelectorAll('[data-dbg]')) c.checked = !!dbg[c.dataset.dbg]; document.body.classList.toggle('dbg-badge', dbg.badge); $('timeline').hidden = !dbg.timeline; }
 for (const c of document.querySelectorAll('[data-dbg]')) c.onchange = () => setDbg(c.dataset.dbg, c.checked);
 function setSpeed(v) { speed = v; store.set('speed', v); for (const b of document.querySelectorAll('[data-speed]')) b.classList.toggle('on', +b.dataset.speed === v); }
 for (const b of document.querySelectorAll('[data-speed]')) b.onclick = () => setSpeed(+b.dataset.speed);
-$('connect').onclick = connect; $('server').value = store.get('server', '');
-$('world').onchange = async () => { world = $('world').value; fillBeats(); const e = index.find(x => x.world === world); if (e) await loadBase(e); };
+$('connect').onclick = () => connect(); $('server').value = store.get('server', '');
+$('world').onchange = async () => {
+  const w = $('world').value;
+  if (live) { await connect(w); return; }
+  world = w; fillBeats(); const e = index.find(x => x.world === world); if (e) await loadBase(e);
+};
 $('beat').onchange = async () => { const e = index.find(x => x.name === $('beat').value); if (e) await loadBase(e); };
 
 // ------------------------------------------------------------------ drawing
@@ -477,6 +524,7 @@ function layoutGraph(g) {
   const by = Object.fromEntries(g.nodes.map(n => [n.id, n])), boxes = {}, bands = [];
   const lvl = n => (n.place && n.place.level) || 0;
   const isInterior = n => n.kind === 'interior' || (n.place && n.place.anchor && n.place.anchor.in && !n.place.rect);
+  const isStub = n => n.status === 'stub' && !(n.place && (n.place.rect || (n.place.anchor && n.place.anchor.in)));
   const rectBox = (r, n) => ({ x: r[0], y: r[1], w: r[2] - r[0] + 1, h: r[3] - r[1] + 1, n });
   const partner = (id, types) => { for (const l of g.links) if (types.includes(l.type) && (l.a === id || l.b === id)) { const o = l.a === id ? l.b : l.a; if (boxes[o]) return o; } return null; };
   for (const n of g.nodes) if (lvl(n) === 0 && !isInterior(n) && n.place && n.place.rect) boxes[n.id] = rectBox(n.place.rect, n);
@@ -486,7 +534,7 @@ function layoutGraph(g) {
   if (x0 > x1) { x0 = 0; y0 = 0; x1 = 15; y1 = 16; }
   const top0 = y0, bottom0 = y1;
   // interiors over their anchor (at the door's side of the anchor)
-  const inter = g.nodes.filter(n => lvl(n) === 0 && !boxes[n.id]);
+  const inter = g.nodes.filter(n => lvl(n) === 0 && !boxes[n.id] && !isStub(n));
   const perAnchor = {};
   for (const n of inter) {
     const an = (n.place && n.place.anchor && n.place.anchor.in && boxes[n.place.anchor.in] ? n.place.anchor.in : null) || partner(n.id, ['door', 'edge', 'vert']);
@@ -512,7 +560,7 @@ function layoutGraph(g) {
   const levels = [...new Set(g.nodes.map(lvl))].filter(l => l !== 0).sort((a, b) => b - a);
   let cursorDown = bottom0 + 3, cursorUp = top0 - 3;
   for (const L of levels.filter(l => l < 0).sort((a, b) => b - a).concat(levels.filter(l => l > 0).sort((a, b) => a - b))) {
-    const ns = g.nodes.filter(n => lvl(n) === L && !boxes[n.id]), raw = [];
+    const ns = g.nodes.filter(n => lvl(n) === L && !boxes[n.id] && !isStub(n)), raw = [];
     for (const n of ns) {
       let r = n.place && n.place.rect;
       if (!r) { const an = partner(n.id, ['vert', 'door', 'edge']); if (an) { const A = boxes[an]; r = [A.x + A.w * .2, A.y + A.h * .25, A.x + A.w * .8 - 1, A.y + A.h * .75 - 1]; } }
@@ -529,11 +577,43 @@ function layoutGraph(g) {
         const o = placed.find(p => b.x < p.x + p.w && p.x < b.x + b.w && b.y < p.y + p.h && p.y < b.y + b.h);
         if (!o) break; b.y = L < 0 ? o.y + o.h + 1 : o.y - b.h - 1;
       }
-      placed.push(b); boxes[b.n.id] = b;
+      placed.push(b); boxes[b.n.id] = b; b.band = L;
     }
     const by0 = Math.min(...placed.map(b => b.y)) - 1, by1 = Math.max(...placed.map(b => b.y + b.h)) + 1;
     bands.push({ L, x: Math.min(x0, ...placed.map(b => b.x)) - 1, y: by0, w: Math.max(x1, ...placed.map(b => b.x + b.w)) - Math.min(x0, ...placed.map(b => b.x)) + 2, h: by1 - by0, label: L < 0 ? (L === -1 ? 'underground' : `underground ${L}`) : `floor +${L}` });
     if (L < 0) cursorDown = by1 + 3; else cursorUp = by0 - 3;
+  }
+  // stubs (promised by a built map, nothing known yet): small boxes beside the node that promises them
+  const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
+  const promiser = n => {
+    for (const l of g.links) { if (l.a === n.id && boxes[l.b]) return { id: l.b, side: OPP[l.side] }; if (l.b === n.id && boxes[l.a]) return { id: l.a, side: l.side }; }
+    const pb = n.promised_by || n.promisedBy;
+    if (pb && boxes[pb.node]) return { id: pb.node, side: (pb.opening || {}).side };
+    let best = null; for (const id in boxes) if (n.id.startsWith(id + '_') && (!best || id.length > best.length)) best = id;
+    return best ? { id: best } : null;
+  };
+  const hits = b => Object.values(boxes).some(o => o !== b && !o.inner && b.x < o.x + o.w + .3 && o.x < b.x + b.w + .3 && b.y < o.y + o.h + .3 && o.y < b.y + b.h + .3);
+  for (const n of g.nodes) {
+    if (boxes[n.id] || !isStub(n)) continue;
+    const pr = promiser(n); if (!pr) continue;
+    const P = boxes[pr.id], A = P.inner ? boxes[P.anchor] || P : P, w = 7, h = 4, gap = .8;
+    const at = side => side === 'E' ? [A.x + A.w + gap, A.y + (A.h - h) / 2] : side === 'W' ? [A.x - w - gap, A.y + (A.h - h) / 2]
+      : side === 'S' ? [A.x + (A.w - w) / 2, A.y + A.h + gap] : [A.x + (A.w - w) / 2, A.y - h - gap];
+    const sides = [...new Set([pr.side, 'E', 'W', 'S', 'N'].filter(Boolean))];
+    let b = null;
+    for (let k = 0; k < 6 && !b; k++) for (const sd of sides) {
+      const [x, y] = at(sd), off = k * (sd === 'E' || sd === 'W' ? h + .6 : w + .6) * (k % 2 ? 1 : -1) * Math.ceil(k / 2) / Math.max(1, k);
+      const c = { x: x + (sd === 'N' || sd === 'S' ? off : 0), y: y + (sd === 'E' || sd === 'W' ? off : 0), w, h, n, stub: true, from: pr.id, band: P.band };
+      if (!hits(c)) { b = c; break; }
+    }
+    if (!b) { const [x, y] = at(sides[0]); b = { x, y, w, h, n, stub: true, from: pr.id, band: P.band }; }
+    boxes[n.id] = b;
+  }
+  for (const bd of bands) {                      // a band also holds the stubs promised from inside it
+    const bs = Object.values(boxes).filter(b => b.band === bd.L);
+    const bx0 = Math.min(bd.x, ...bs.map(b => b.x - 1)), by0 = Math.min(bd.y, ...bs.map(b => b.y - 1));
+    bd.w = Math.max(bd.x + bd.w, ...bs.map(b => b.x + b.w + 1)) - bx0; bd.h = Math.max(bd.y + bd.h, ...bs.map(b => b.y + b.h + 1)) - by0; bd.x = bx0; bd.y = by0;
+    if (bd.L < 0) cursorDown = Math.max(cursorDown, bd.y + bd.h + 3);
   }
   // anything still unplaced: a row under everything
   let ux = x0;
@@ -556,18 +636,24 @@ function drawGraph() {
     const dash = l.type === 'door' ? `${u(1.5)} ${u(3)}` : l.type === 'vert' ? `${u(6)} ${u(4)}` : '';
     out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="#efe6c8" stroke-opacity="${l.type === 'edge' ? .55 : .75}" stroke-width="${u(l.type === 'edge' ? 2.2 : 1.6)}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`);
   }
+  for (const b of Object.values(Lg.boxes)) if (b.stub && b.from) {
+    const a = ctr(b.from), c = ctr(b.n.id);
+    if (a && c && !g.links.some(l => (l.a === b.from && l.b === b.n.id) || (l.b === b.from && l.a === b.n.id)))
+      out.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}" stroke="#efe6c8" stroke-opacity=".5" stroke-width="${u(1.3)}" stroke-dasharray="${u(3)} ${u(3)}"/>`);
+  }
   const order = Object.values(Lg.boxes).sort((a, b) => (a.inner ? 1 : 0) - (b.inner ? 1 : 0));
   for (const b of order) {
     const n = b.n, planned = n.status !== 'built', building = n.status === 'building' || n.building;
     const col = planned && !n.model ? '#d6d2c4' : COL[n.model] || '#d6d2c4', you = g.player === n.id;
     const sw = n.frozen ? 3.4 : 1.4;
-    const fs = Math.min(12, Math.max(8.5, b.w * sc / 9)), maxc = Math.max(4, Math.floor(Math.max(b.w * sc, b.inner ? 84 : 0) / (fs * .56)));
-    const t = (n.title || n.id), tt = t.length > maxc ? t.slice(0, maxc - 1) + '…' : t;
+    const fs = Math.min(12, Math.max(8.5, b.w * sc / 9)), maxc = Math.max(4, Math.floor(Math.max(b.w * sc, b.inner ? 84 : b.stub ? 110 : 0) / (fs * .56)));
+    const t = b.stub ? stubLabel(n) : (n.title || n.id), tt = t.length > maxc ? t.slice(0, maxc - 1) + '…' : t;
     out.push(`<g class="n${building ? ' pulse' : ''}" data-id="${esc(n.id)}">`
       + `<rect x="${b.x + .15}" y="${b.y + .15}" width="${b.w - .3}" height="${b.h - .3}" rx="${u(5)}" fill="${col}" fill-opacity="${planned ? .08 : b.inner ? .5 : .24}" stroke="${col}" stroke-width="${u(sw)}"${planned ? ` stroke-dasharray="${u(5)} ${u(3.5)}"` : ''}/>`
       + (you ? `<rect class="you" x="${b.x - u(3)}" y="${b.y - u(3)}" width="${b.w + 2 * u(3)}" height="${b.h + 2 * u(3)}" rx="${u(7)}" fill="none" stroke="#8de0c0" stroke-width="${u(2)}"/>` : '')
-      + `<text x="${b.x + b.w / 2}" y="${b.inner ? b.y + b.h / 2 + +u(fs * .35) : b.y + +u(fs + 4)}" text-anchor="middle" font-size="${u(fs)}">${esc(tt)}</text>`
-      + (!b.inner ? `<text x="${b.x + b.w / 2}" y="${b.y + b.h - +u(5)}" text-anchor="middle" font-size="${u(9.5)}" fill-opacity=".75">${esc(planned ? n.status : (n.model || '') + (n.seconds != null ? ' ' + n.seconds + 's' : ''))}${n.frozen ? ' · frozen' : ''}</text>` : '')
+      + `<text x="${b.x + b.w / 2}" y="${b.inner ? b.y + b.h / 2 + +u(fs * .35) : b.stub ? b.y + b.h / 2 - +u(1) : b.y + +u(fs + 4)}" text-anchor="middle" font-size="${u(fs)}"${b.stub ? ' fill-opacity=".9"' : ''}>${esc(tt)}</text>`
+      + (b.stub ? `<text x="${b.x + b.w / 2}" y="${b.y + b.h / 2 + +u(fs)}" text-anchor="middle" font-size="${u(9)}" fill-opacity=".6">promised</text>` : '')
+      + (!b.inner && !b.stub ? `<text x="${b.x + b.w / 2}" y="${b.y + b.h - +u(5)}" text-anchor="middle" font-size="${u(9.5)}" fill-opacity=".75">${esc(planned ? n.status : (n.model || '') + (n.seconds != null ? ' ' + n.seconds + 's' : ''))}${n.frozen ? ' · frozen' : ''}</text>` : '')
       + (you ? `<circle class="you" cx="${b.x + b.w / 2}" cy="${b.y + b.h / 2 + (b.inner ? 0 : +u(4))}" r="${u(b.inner ? 3.5 : 5)}" fill="#8de0c0" stroke="#0b1213" stroke-width="${u(1.5)}"/>` : '')
       + `</g>`);
   }
@@ -575,13 +661,21 @@ function drawGraph() {
   for (const t of svg.querySelectorAll('text')) t.setAttribute('stroke-width', u(2.6));
   if (!$('gcard').hidden && $('gcard').dataset.id) showCard($('gcard').dataset.id);
 }
+function stubLabel(n) {
+  if (n.title && n.title !== n.id) return n.title;
+  let id = String(n.id); const w = S.graph.world || world;
+  if (w && id.startsWith(w + '_')) id = id.slice(w.length + 1);
+  return id.replace(/_+/g, ' ').replace(/([a-z])(\d)/gi, '$1 $2').trim() || n.id;
+}
 function showCard(id) {
-  const n = S.gnode(id); if (!n) return;
+  const n0 = S.gnode(id); if (!n0) return;
+  const stub = n0.status === 'stub', n = stub ? { ...n0, title: stubLabel(n0), status: 'promised' } : n0;
   const c = $('gcard'); c.dataset.id = id; c.hidden = false;
   const cands = n.candidates || [];
   c.innerHTML = `<h3>${esc(n.title || id)}</h3><p><span class="sw" style="background:${COL[n.model] || '#d6d2c4'}"></span>${esc(n.status)}${n.model ? ' · ' + esc(n.model) : ''}${n.seconds != null ? ' · ' + n.seconds + ' s' : ''}${n.frozen ? ' · frozen' : ''}${n.seen ? ' · seen' : ''}${S.player === id ? ' · you are here' : ''}</p>`
+    + (stub ? `<p>promised by an opening of a built map; nothing planned yet (id ${esc(id)})</p>` : '')
     + (n.purpose ? `<p>${esc(n.purpose)}</p>` : '')
-    + (n.place ? `<p style="color:#7d918b">${esc(n.kind || '')} · level ${(n.place.level || 0)}${n.place.zone ? ' · ' + esc(n.place.zone) : ''}</p>` : '')
+    + (n.place && !stub ? `<p style="color:#7d918b">${esc(n.kind || '')} · level ${(n.place.level || 0)}${n.place.zone ? ' · ' + esc(n.place.zone) : ''}</p>` : '')
     + (cands.length ? `<table>${cands.map(k => `<tr><td><span class="sw" style="background:${COL[k.model] || '#ccc'}"></span>${esc(k.model)}</td><td>${k.seconds != null ? k.seconds + ' s' : ''}</td><td>${k.valid ? 'valid' : 'invalid'}</td><td>${esc(k.status || '')}</td></tr>`).join('')}</table>` : (n.models ? `<p>racing: ${esc(n.models.join(', '))}</p>` : ''));
 }
 $('gsvg').addEventListener('click', e => { const t = e.target.closest('.n'); if (t) showCard(t.dataset.id); else $('gcard').hidden = true; });
@@ -621,10 +715,18 @@ setDbg('portals', dbg.portals); setSpeed(speed);
 resize();
 try { index = await fetch(SESS + 'index.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw Error(r.status); return r.json(); }); }
 catch (e) { status('No session packages (sessions/index.json missing).', 'warn'); }
-for (const w of worldsOf()) { const o = document.createElement('option'); o.value = w.id; o.textContent = w.title; $('world').append(o); }
+// live.json ({"server": "..."}) prefills the server field and shows a note; never auto-connects; absent/dead = quiet
+try {
+  const lj = await fetchJSON('live.json', { cache: 'no-cache' }, 4000);
+  if (lj && typeof lj.server === 'string' && lj.server) {
+    $('server').value = lj.server;
+    $('liveNote').hidden = false; $('liveNote').textContent = 'live server available' + (lj.started ? ' (started ' + lj.started + ')' : '') + ': connect to try it';
+  }
+} catch {}
+fillWorlds();
 const [hw, hb] = decodeURIComponent(location.hash.slice(1)).split('/');
 const first = index.find(e => e.name === hb) || index.find(e => e.world === hw) || index[0];
-if (first) { world = first.world; fillBeats(); await loadBase(first); }
+if (first) { world = first.world; fillWorlds(); fillBeats(); await loadBase(first); }
 requestAnimationFrame(frame);
 // QA surface (screenshots/tests): read-only state plus the same entry points the UI uses
 window.play4 = {

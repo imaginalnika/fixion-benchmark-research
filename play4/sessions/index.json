@@ -45,6 +45,81 @@
   "policy": "b"
  },
  {
+  "name": "bar_cellar",
+  "world": "bar",
+  "title": "Figgs & Potts · check behind the cellar",
+  "line": "check behind the cellar",
+  "file": "bar_cellar/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "bar_cellar_opus",
+  "world": "bar",
+  "title": "Figgs & Potts · check behind the cellar (opus planner)",
+  "line": "check behind the cellar",
+  "file": "bar_cellar_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "bar_dragon",
+  "world": "bar",
+  "title": "Figgs & Potts · the dragon everybody has been talking about",
+  "line": "I want to see the dragon everybody's been talking about",
+  "file": "bar_dragon/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "gwangsu_cellar",
+  "world": "gwangsu",
+  "title": "광수의 집 · check behind the cellar",
+  "line": "check behind the cellar",
+  "file": "gwangsu_cellar/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "gwangsu_taichi",
+  "world": "gwangsu",
+  "title": "광수의 집 · I want to train tai chi",
+  "line": "I want to train tai chi",
+  "file": "gwangsu_taichi/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
   "name": "louis_beggar",
   "world": "louis",
   "title": "루이 뉘똥 · the beggar in the corner",
@@ -65,6 +140,51 @@
   "title": "루이 뉘똥 · the beggar in the corner (opus planner)",
   "line": "let's talk to the beggar in the corner",
   "file": "louis_beggar_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "louis_cellar",
+  "world": "louis",
+  "title": "루이 뉘똥 · check behind the cellar",
+  "line": "check behind the cellar",
+  "file": "louis_cellar/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "louis_taichi",
+  "world": "louis",
+  "title": "루이 뉘똥 · I want to train tai chi",
+  "line": "I want to train tai chi",
+  "file": "louis_taichi/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "louis_taichi_opus",
+  "world": "louis",
+  "title": "루이 뉘똥 · I want to train tai chi (opus planner)",
+  "line": "I want to train tai chi",
+  "file": "louis_taichi_opus/session.json",
   "planner": "opus",
   "models": [
    "pcg",
@@ -96,6 +216,51 @@
   "line": "have you seen my cat?",
   "file": "morrows_cat_opus/session.json",
   "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "morrows_dragon",
+  "world": "morrows",
+  "title": "Morrows · the dragon everybody has been talking about",
+  "line": "I want to see the dragon everybody's been talking about",
+  "file": "morrows_dragon/session.json",
+  "planner": "sonnet",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "morrows_dragon_opus",
+  "world": "morrows",
+  "title": "Morrows · the dragon everybody has been talking about (opus planner)",
+  "line": "I want to see the dragon everybody's been talking about",
+  "file": "morrows_dragon_opus/session.json",
+  "planner": "opus",
+  "models": [
+   "pcg",
+   "qwen",
+   "sonnet",
+   "opus"
+  ],
+  "policy": "b"
+ },
+ {
+  "name": "morrows_taichi",
+  "world": "morrows",
+  "title": "Morrows · I want to train tai chi",
+  "line": "I want to train tai chi",
+  "file": "morrows_taichi/session.json",
+  "planner": "sonnet",
   "models": [
    "pcg",
    "qwen",
